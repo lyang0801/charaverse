@@ -372,6 +372,54 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div class="modal-window" id="modalWindowContent"></div>
 </div>
 
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyIfdoomstCV8zakpUWPCrAzCmYQv18",
+    authDomain: "charaverse-8cbfc.firebaseapp.com",
+    databaseURL: "https://charaverse-8cbfc-default-rtdb.firebaseio.com",
+    projectId: "charaverse-8cbfc",
+    storageBucket: "charaverse-8cbfc.firebasestorage.app",
+    messagingSenderId: "398820095346",
+    appId: "1:398820095346:web:a365d10aa98b173c8d9eb",
+    measurementId: "G-GV6X2GFBMZ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dbRef = ref(db, 'charaverse');
+
+  // Firebase → 앱: 실시간 수신 (누가 바꿔도 즉시 반영)
+  onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      charaverseDatabase = data;
+    } else {
+      // Firebase가 비어있으면 기본 데이터 업로드
+      set(dbRef, charaverseDatabase);
+    }
+    if (!window._fbInitialized) {
+      window._fbInitialized = true;
+      renderCircleCreatorGrid();
+      updateNavbar();
+    } else {
+      // 다른 사람이 수정했을 때 현재 화면 갱신
+      if (currentView === 'main') renderCircleCreatorGrid();
+      else if (currentView === 'creator') renderCreatorProfilePage();
+      else if (currentView === 'folder') renderFolderContentPage();
+      else if (currentView === 'character') renderCharacterDocument();
+    }
+  });
+
+  // 앱 → Firebase: 저장 함수 (전역 노출)
+  window.saveToFirebase = function() {
+    set(dbRef, charaverseDatabase);
+  };
+</script>
+
 <script>
 let charaverseDatabase = {
   "량량": {
@@ -427,10 +475,7 @@ let isFolderEditUiActive = false;
 let globalSelectedFontClass = 'canvas-font-notosans';
 let savedSelectionRange = null;
 
-window.onload = function() {
-  renderCircleCreatorGrid();
-  updateNavbar();
-};
+// 초기화는 Firebase onValue 콜백에서 처리
 
 function changeGlobalTheme(val) { document.documentElement.setAttribute('data-theme', val); }
 function changeGlobalFontLayoutEngine(fontClass) {
@@ -511,7 +556,7 @@ function openNewCreatorFormPopup() {
 function submitNewCreator() {
   const name = document.getElementById('addCrName').value.trim(); if(!name) return alert('명칭을 기입해주세요.');
   charaverseDatabase[name] = { bio: document.getElementById('addCrBio').value.trim() || "CHARAVERSE 창작 멤버", avatar: "", banner: "", folders: [] };
-  closeGlobalModal(); renderCircleCreatorGrid();
+  closeGlobalModal(); renderCircleCreatorGrid(); saveToFirebase();
 }
 
 function renderCreatorProfilePage() {
@@ -562,7 +607,7 @@ function submitCreatorEditForm() {
   charaverseDatabase[currentCreator].bio = document.getElementById('editCrBio').value.trim();
   charaverseDatabase[currentCreator].avatar = window.tempAvatarData || "";
   charaverseDatabase[currentCreator].banner = window.tempBannerData || "";
-  closeGlobalModal(); renderCreatorProfilePage();
+  closeGlobalModal(); renderCreatorProfilePage(); saveToFirebase();
 }
 
 function openFolderAddModal() {
@@ -583,7 +628,7 @@ function submitAddNewFolder() {
     worldTitle: name, worldSubtitle: document.getElementById('newFolderDesc').value.trim(),
     worldSetting: "해당 장르 및 세계관의 핵심 설정 규칙이나 스토리를 기입해 보세요.", characters: [] 
   });
-  closeGlobalModal(); renderCreatorProfilePage();
+  closeGlobalModal(); renderCreatorProfilePage(); saveToFirebase();
 }
 
 function renderFolderContentPage() {
@@ -643,7 +688,7 @@ function submitFolderWorldSettingTextPopup() {
   fData.worldSetting = document.getElementById('modalWorldSettingTextarea').value;
   fData.worldTitle = document.getElementById('modalWorldTitle').value.trim() || fData.name;
   fData.worldSubtitle = document.getElementById('modalWorldSubtitle').value.trim();
-  closeGlobalModal(); renderFolderContentPage();
+  closeGlobalModal(); renderFolderContentPage(); saveToFirebase();
 }
 function resizeFolderBannerCover(val) {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).bannerHeight = val;
@@ -681,7 +726,7 @@ function submitAddNewCharacter() {
       { id: "sec-2", title: "2. 상세 특징 서술", type: "text", data: "이곳에 특징 요약을 집필해 보세요." }
     ]
   });
-  closeGlobalModal(); renderFolderContentPage();
+  closeGlobalModal(); renderFolderContentPage(); saveToFirebase();
 }
 
 /* ==================== 🛠️ 나무위키 실시간 주석 엔진 완전 수리 파트 ==================== */
@@ -1120,7 +1165,7 @@ function setupDragAndDropEvents(handle, el, nodeData, rel) {
     el.style.left = nextX + "px"; el.style.top = nextY + "px";
     drawRelationshipArrowsSvg(rel);
   });
-  document.addEventListener('mouseup', () => { isDragging = false; });
+  document.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; saveToFirebase(); } else { isDragging = false; } });
 }
 
 function updateCanvasNodeNameInline(id, element) {
@@ -1301,7 +1346,7 @@ function submitIntegratedEdgeArrowLink() {
     from: from, to: to, text: document.getElementById('modalEdgeText').value.trim() || "관계",
     color: document.getElementById('modalEdgeCustomColorPicker').value
   });
-  closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
+  closeGlobalModal(); initInteractiveCanvasEngine(char.relationships); saveToFirebase();
 }
 
 function insertNewTableRowInlineFromNode(secId, index) {
@@ -1386,6 +1431,7 @@ function toggleCharacterEditMode() {
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'none');
 
     renderCharacterDocument();
+    saveToFirebase(); // 편집 완료 시 저장
   }
 }
 
@@ -1404,7 +1450,7 @@ function handleHeaderIdentityClick() {
 function submitCharacterIdentityEdit() {
   const nextName = document.getElementById('editCharDocName').value.trim(); if(!nextName) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-  char.name = nextName; currentCharacter = nextName; closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  char.name = nextName; currentCharacter = nextName; closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode(); saveToFirebase();
 }
 
 function openNewTocModalPopup() {
@@ -1421,7 +1467,7 @@ function submitAddNewTocFromModal() {
   const title = document.getElementById('modalNewTocTitle').value.trim(); if(!title) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections.push({ id: "sec-" + Date.now(), title: title, type: "text", data: "이곳에 설정을 기술하세요." });
-  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode(); saveToFirebase();
 }
 function openEditTocModalPopup(secId, currentTitle) {
   const modal = document.getElementById('modalWindowContent');
@@ -1437,7 +1483,7 @@ function submitEditTocFromModal(secId) {
   const nextTitle = document.getElementById('modalEditTocTitle').value.trim(); if(!nextTitle) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId); if(sec) sec.title = nextTitle;
-  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode(); saveToFirebase();
 }
 function deleteCustomSection(secId) {
   if(secId==='sec-0' || secId==='sec-1') return alert('기본 명세 축은 삭제할 수 없습니다.');
@@ -1507,6 +1553,7 @@ function resizeFullShotImg(val, type) {
 function deleteCurrentCharacter() {
   if(!confirm("이 문서 카드를 완전히 파쇄합니까?")) return;
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.filter(c => c.name !== currentCharacter);
+  saveToFirebase();
   navigate('folder', currentCreator, currentFolder);
 }
 function scrollToSection(id, element) {
