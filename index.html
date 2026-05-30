@@ -392,31 +392,48 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   const db = getDatabase(app);
   const dbRef = ref(db, 'charaverse');
 
-  // Firebase → 앱: 실시간 수신 (누가 바꿔도 즉시 반영)
+  // Firebase → 앱: 실시간 수신
   onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
       charaverseDatabase = data;
     } else {
-      // Firebase가 비어있으면 기본 데이터 업로드
       set(dbRef, charaverseDatabase);
     }
     if (!window._fbInitialized) {
       window._fbInitialized = true;
       renderCircleCreatorGrid();
       updateNavbar();
-    } else {
-      // 다른 사람이 수정했을 때 현재 화면 갱신
+    } else if (!window._mySave) {
+      // 내가 저장한 게 아닐 때만(= 다른 사람이 바꿨을 때만) 화면 갱신
       if (currentView === 'main') renderCircleCreatorGrid();
       else if (currentView === 'creator') renderCreatorProfilePage();
       else if (currentView === 'folder') renderFolderContentPage();
       else if (currentView === 'character') renderCharacterDocument();
     }
+    window._mySave = false;
   });
 
-  // 앱 → Firebase: 저장 함수 (전역 노출)
+  // 앱 → Firebase: 저장 함수 (내가 저장할 땐 재렌더 스킵)
   window.saveToFirebase = function() {
+    window._mySave = true;
     set(dbRef, charaverseDatabase);
+  };
+
+  // 창작자 삭제
+  window.deleteCreator = function(name) {
+    if(!confirm(`'${name}' 창작자를 삭제할까요? 하위 데이터가 모두 사라져요.`)) return;
+    delete charaverseDatabase[name];
+    window._mySave = true;
+    set(dbRef, charaverseDatabase).then(() => { clearToMain(); });
+  };
+
+  // 폴더(세계관) 삭제
+  window.deleteFolder = function(folderName) {
+    if(!confirm(`'${folderName}' 세계관을 삭제할까요? 하위 캐릭터가 모두 사라져요.`)) return;
+    charaverseDatabase[currentCreator].folders = charaverseDatabase[currentCreator].folders.filter(f => f.name !== folderName);
+    window._mySave = true;
+    set(dbRef, charaverseDatabase).then(() => { navigate('creator', currentCreator); });
   };
 </script>
 
@@ -534,9 +551,12 @@ function renderCircleCreatorGrid() {
   Object.keys(charaverseDatabase).forEach(name => {
     const current = charaverseDatabase[name];
     let avatarHtml = current.avatar ? `<img src="${current.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<div class="circle-avatar-placeholder">${name[0]}</div>`;
-    gridHtml += `<div class="circle-creator-node" onclick="navigate('creator', '${name}')">
-      <div class="circle-avatar-wrapper">${avatarHtml}</div>
-      <div class="circle-creator-name">${name}</div>
+    gridHtml += `<div class="circle-creator-node" style="position:relative;">
+      <div onclick="navigate('creator', '${name}')">
+        <div class="circle-avatar-wrapper">${avatarHtml}</div>
+        <div class="circle-creator-name">${name}</div>
+      </div>
+      <div onclick="deleteCreator('${name}')" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:bold;z-index:10;">✕</div>
     </div>`;
   });
   document.getElementById('mainCircleCreatorGrid').innerHTML = gridHtml || '<div class="empty-placeholder-box">등록된 창작 멤버가 없습니다.</div>';
@@ -570,8 +590,11 @@ function renderCreatorProfilePage() {
 
   let fHtml = '';
   target.folders.forEach((f, idx) => {
-    fHtml += `<div class="folder-card" onclick="navigate('folder', '${currentCreator}', '${f.name}')">
-      <div><div class="folder-card-title">📁 ${f.name}</div><div class="folder-card-desc">${f.desc}</div></div>
+    fHtml += `<div class="folder-card" style="position:relative;">
+      <div onclick="navigate('folder', '${currentCreator}', '${f.name}')">
+        <div class="folder-card-title">📁 ${f.name}</div><div class="folder-card-desc">${f.desc}</div>
+      </div>
+      <div onclick="deleteFolder('${f.name}')" style="position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:bold;">✕</div>
     </div>`;
   });
   document.getElementById('folderGridContainer').innerHTML = fHtml || '<div class="empty-placeholder-box">생성된 폴더 카테고리가 없습니다.</div>';
