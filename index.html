@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light-cotton">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHARAVERSE — 비주얼 캔버스 에디션 (V11)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* 프리미엄 컬러 팔레트 테마 */
+:root[data-theme="light-cotton"] {
+  --bg:#f7f6f3;--white:#ffffff;--surface:#f2f0ed;--surface2:#eceae6;--border:#e2dfd9;--border2:#ccc9c2;
+  --text:#1a1916;--muted:#7a7870;--muted2:#a09e96;--accent:#6b4fd8;--accent-bg:#f0ecff;--accent-border:#d4c9f7;--teal:#1a8a72;
+}
+:root[data-theme="ocean-blue"] {
+  --bg:#f0f4f8;--white:#ffffff;--surface:#e1e8f0;--surface2:#d0dbe7;--border:#bccddf;--border2:#9ab4d0;
+  --text:#102a43;--muted:#486581;--muted2:#627d98;--accent:#1982fc;--accent-bg:#e6f2ff;--accent-border:#b3d7ff;--teal:#009688;
+}
+:root[data-theme="dark-neo"] {
+  --bg:#141414;--white:#1e1e1e;--surface:#2a2a2a;--surface2:#333333;--border:#262626;--border2:#444444;
+  --text:#e3e3e3;--muted:#9b9b9b;--muted2:#666666;--accent:#967eff;--accent-bg:#2b2440;--accent-border:#4c3e7a;--teal:#34d399;
+}
+:root[data-theme="antique-sepia"] {
+  --bg:#f4eae1;--white:#fdf8f4;--surface:#eae0d5;--surface2:#dfd5ca;--border:#d0c4b7;--border2:#bfae9e;
+  --text:#433520;--muted:#846f5b;--muted2:#a48f7a;--accent:#8e4a23;--accent-bg:#f5ede6;--accent-border:#d7beab;--teal:#5d7a68;
+}
+
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;min-height:100vh;transition:all 0.2s;overflow-x:hidden}
+
+.canvas-font-notosans { font-family: 'Noto Sans KR', sans-serif !important; }
+.canvas-font-gowun { font-family: 'Gowun Batang', serif !important; }
+.canvas-font-nanum { font-family: 'Nanum Gothic', sans-serif !important; }
+.canvas-font-notoserif { font-family: 'Noto Serif KR', serif !important; }
+
+/* GLOBAL NAV */
+.nav{display:flex;align-items:center;padding:12px 28px;border-bottom:1px solid var(--border);background:var(--white);position:sticky;top:0;z-index:100;gap:16px}
+.back-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:var(--text);font-weight:bold}
+.logo{font-family:'Gowun Batang',serif;font-size:18px;color:var(--accent);font-weight:700;cursor:pointer}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.breadcrumb span.link{cursor:pointer}
+.breadcrumb span.link:hover{color:var(--accent)}
+.nav-actions{display:flex;align-items:center;gap:8px}
+.theme-selector{padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:12px;cursor:pointer}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 16px;border-radius:6px;border:1px solid var(--border2);background:var(--white);color:var(--muted);font-size:13px;cursor:pointer;transition:all 0.15s;user-select:none}
+.btn:hover{background:var(--surface);color:var(--text);border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+
+.main-title-area{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.main-title{font-family:'Gowun Batang',serif;font-size:22px;font-weight:700;color:var(--text)}
+
+.app-container{max-width:1160px;margin:0 auto;padding:0 16px}
+.layout-three-col{display:grid;grid-template-columns:210px 1fr 240px}
+.layout-main-only{max-width:850px;margin:0 auto;padding:32px 0}
+
+/* SIDEBAR LEFT */
+.sidebar-left{padding:20px 14px 20px 0;border-right:1px solid var(--border);position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto}
+.sidebar-label{font-size:11px;color:var(--muted2);font-weight:500;letter-spacing:0.07em;margin-bottom:8px;padding:0 6px;text-transform:uppercase}
+.char-list-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:13px;color:var(--muted);cursor:pointer;margin-bottom:2px}
+.char-list-item:hover{background:var(--surface);color:var(--text)}
+.char-list-item.active{color:var(--accent);font-weight:500;background:var(--accent-bg)}
+.char-dot{width:6px;height:6px;border-radius:50%;background:var(--border2)}
+.char-dot.active{background:var(--accent)}
+
+.page-view{display:none}
+.page-view.active{display:block}
+
+/* 메인 그리드 */
+.circle-creator-grid{display:flex;flex-wrap:wrap;gap:32px;padding:20px 0}
+.circle-creator-node{display:flex;flex-direction:column;align-items:center;width:90px;cursor:pointer}
+.circle-avatar-wrapper{width:84px;height:84px;border-radius:50%;background:var(--white);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.circle-avatar-placeholder{width:100%;height:100%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;font-size:24px;font-weight:700}
+.circle-creator-name{font-size:13px;font-weight:700;color:var(--text);margin-top:8px;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis}
+
+/* 와이드 배너 컨테이너 */
+.profile-banner-container{width:100%;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--white);margin-bottom:24px;position:relative}
+.profile-banner-image-bg{width:100%;height:160px;background:linear-gradient(135deg, var(--accent-bg), #d4c9f7);background-size:cover;background-position:center}
+.profile-banner-info-row{padding:24px 20px;display:flex;align-items:flex-end;gap:18px;margin-top:-40px;position:relative;z-index:2}
+.profile-banner-avatar-box{width:80px;height:80px;border-radius:50%;border:4px solid var(--white);background:var(--white);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.profile-banner-text{padding-bottom:4px;flex:1;margin-top:8px}
+.tiny-more-btn{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:rgba(250,250,250,0.85);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:10}
+
+/* 폴더 장르 카드 리스트 */
+.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.folder-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;position:relative;display:flex;flex-direction:column;justify-content:space-between}
+.folder-card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.folder-card-desc{font-size:13px;color:var(--muted);line-height:1.4}
+
+/* CHARACTER CARD */
+.char-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:20px}
+.char-card{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer}
+.char-card-thumb{width:100%;height:110px;background:linear-gradient(135deg,#e8e2f8,#c9bfec);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.char-card-symbol-txt{font-family:'Gowun Batang',serif;font-size:32px;color:var(--accent)}
+.char-card-body{padding:12px}
+.char-card-name{font-size:14px;font-weight:700;text-align:center}
+
+.empty-placeholder-box {display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;width:100%;text-align:center;color:var(--muted2);border:1px dashed var(--border2);border-radius:12px;background:var(--white)}
+
+.cover{width:100%;height:140px;border-radius:10px;background:linear-gradient(135deg,#e8e2f8 0%,#c9bfec 100%);margin-bottom:-44px;position:relative;background-size:cover;background-position:center}
+.banner-height-control{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.7);color:#fff;padding:6px;border-radius:6px;font-size:11px;display:none;align-items:center;gap:6px;z-index:10}
+
+.char-profile-header{display:flex;align-items:flex-end;gap:14px;margin-bottom:24px}
+.char-avatar-box{width:76px;height:76px;border-radius:10px;background:linear-gradient(135deg,#ede8fc,#d8d0f5);border:3px solid var(--white);display:flex;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;font-size:26px;color:var(--accent);z-index:1;cursor:pointer;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+
+.divider{display:flex;align-items:center;gap:10px;margin:28px 0 14px;color:var(--muted2);font-size:12px;font-weight:500;letter-spacing:0.06em}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* 기본 테이블 명세 (직관적인 항 상시 노출식 개편) */
+.info-table{width:100%;border-collapse:collapse;font-size:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;background:var(--white)}
+.info-table tr{border-bottom:1px solid var(--border);position:relative}
+.info-table th{width:130px;text-align:left;padding:10px 14px;color:var(--muted);font-weight:500;background:var(--surface);font-size:13px}
+.info-table td{padding:10px 14px;color:var(--text);min-width:100px}
+
+/* [피드백 반영] 행 추가/제외를 누구나 바로 찾을 수 있도록 우측 고정 배지형 UI 개편 */
+.row-control-btn-wrap { display:none; align-items:center; gap:4px; position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:10; }
+.row-ctrl-badge { padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border2); background:var(--white); cursor:pointer; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+.row-ctrl-badge.add { color:var(--teal); border-color:var(--teal); }
+.row-ctrl-badge.add:hover { background:var(--accent-bg); }
+.row-ctrl-badge.del { color:#dc2626; border-color:#dc2626; }
+.row-ctrl-badge.del:hover { background:#fef2f2; }
+
+.prose{font-size:14px;color:var(--text);line-height:1.8;min-height:40px;padding:8px;border-radius:6px}
+
+/* ==================== 📁 하위 폴더 분리형 스포일러 가림막 커포넌트 ==================== */
+.spoiler-container { border: 1px dashed #c24070; background: #fff5f8; border-radius: 8px; padding: 14px; margin: 14px 0; position: relative; }
+.spoiler-blind { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, #2d2327, #4a353d); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; z-index: 20; transition: opacity 0.25s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+.spoiler-blind-title { font-weight: bold; font-size: 14px; letter-spacing: 0.05em; color: #ffb3cb; margin-bottom: 2px; }
+.spoiler-blind-desc { font-size: 11px; opacity: 0.75; }
+.spoiler-content { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
+.spoiler-container.unveiled .spoiler-blind { display: none !important; }
+.spoiler-container.unveiled .spoiler-content { opacity: 1 !important; pointer-events: auto !important; }
+
+/* ==================== 📊 방사형 차트 레이아웃 그래픽스 컴포넌트 ==================== */
+.radar-chart-outer-box { display: flex; flex-direction: column; align-items: center; background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; gap: 16px; }
+.radar-chart-wrapper { width: 240px; height: 240px; }
+.radar-chart-editor-panel { display: none; background: var(--surface); padding: 14px; border-radius: 8px; width: 100%; max-width: 460px; flex-direction: column; gap: 8px; font-size: 12px; }
+.radar-stat-row { display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 10px; }
+
+/* ==================== 나무위키형 정밀 실시간 주석 스탬프 시스템 ==================== */
+.wiki-footnote-ref { color: var(--accent); font-size: 11px; font-weight: bold; cursor: pointer; margin: 0 2px; text-decoration: none; display: inline-block; vertical-align: super; position: relative; }
+.wiki-footnote-ref:hover { text-decoration: underline; }
+
+/* 각주 팝업 (JS 방식으로 교체 - CSS :after 제거) */
+#footnoteTooltipPopup {
+  position: fixed; background: rgba(20,20,20,0.95); color: #fff; padding: 7px 14px;
+  border-radius: 6px; font-size: 12px; max-width: 300px; line-height: 1.5;
+  z-index: 9999; pointer-events: none; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  white-space: normal; word-break: keep-all;
+}
+
+.footnote-area-list { margin-top: 32px; padding: 16px; border-top: 1px dashed var(--border2); font-size: 13px; color: var(--muted); background: var(--white); border-radius: 8px; }
+.footnote-item { display: flex; gap: 8px; margin-bottom: 5px; align-items: flex-start; }
+.footnote-num { color: var(--accent); font-weight: bold; text-decoration: none; cursor: pointer; }
+.footnote-num:hover { text-decoration: underline; }
+.footnote-text { color: var(--text); }
+
+/* 전신 비주얼 빈 칸 */
+.full-shot-box { display:flex; flex-direction:column; align-items:center; justify-content:center; border:2px dashed var(--border2); border-radius:10px; background:var(--surface); overflow:hidden; }
+
+/* ==================== 관계도 드래그 캔버스 엔진 ==================== */
+.rel-system-outer{width:100%;margin:20px 0;position:relative}
+.rel-system-header{font-size:14px;font-weight:bold;color:var(--accent);margin-bottom:10px}
+.rel-toolbar{display:none;gap:8px;margin-bottom:10px}
+.rel-canvas-viewport{width:100%;height:460px;position:relative;overflow:hidden;user-select:none;background:transparent}
+.rel-svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+
+.rel-node-circle{width:70px;height:70px;border-radius:50%;background:var(--white);border:3px solid var(--border2);position:absolute;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
+.rel-node-avatar-slot{width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface);cursor:pointer}
+.rel-node-avatar-slot img{width:100%;height:100%;object-fit:cover}
+.rel-node-text-label{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;white-space:nowrap;color:var(--text);background:var(--white);padding:2px 6px;border-radius:4px;border:1px solid var(--border)}
+.rel-node-x-btn{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#dc2626;color:#fff;font-size:10px;font-weight:bold;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:10;border:none}
+.rel-node-drag-handle{position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;display:none;align-items:center;justify-content:center;cursor:grab;z-index:12;box-shadow:0 2px 5px rgba(0,0,0,0.2)}
+
+/* EDITOR ENGINE TOOLBAR */
+.editor-toolbar{padding:8px;border:1px solid var(--border);background:var(--white);border-radius:8px;margin-bottom:14px;display:none;gap:6px;flex-wrap:wrap;align-items:center;position:sticky;top:54px;z-index:90;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.editor-toolbar button, .editor-toolbar select{background:none;border:none;padding:4px 8px;font-size:12px;cursor:pointer;border-radius:4px;color:var(--text);font-weight:500;border:1px solid transparent}
+.editor-toolbar button:hover, .editor-toolbar select:hover{background:var(--surface);border-color:var(--border)}
+.color-picker-wrapper{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-left:4px;padding-left:6px;border-left:1px solid var(--border)}
+.color-input{width:22px;height:22px;border:none;padding:0;background:none;cursor:pointer}
+.edit-active{outline:2px dashed var(--accent) !important;background:var(--white) !important;min-height:30px}
+
+/* SIDEBAR RIGHT */
+.sidebar-right{padding:20px 0 20px 14px;border-left:1px solid var(--border);position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto;display:flex;flex-direction:column;justify-content:space-between}
+.toc-container{display:flex;flex-direction:column;gap:2px}
+.toc-link-wrapper{display:flex;align-items:center;position:relative;border-radius:4px;transition:background 0.1s}
+.toc-link-wrapper.drag-over{background:var(--accent-bg);outline:1px dashed var(--accent)}
+.toc-link-wrapper.dragging{opacity:0.4}
+.toc-drag-handle{font-size:10px;cursor:grab;padding:0 4px;color:var(--muted2);display:none;user-select:none}
+.toc-drag-handle:active{cursor:grabbing}
+.toc-link{font-size:12px;color:var(--muted);padding:5px 8px;border-left:2px solid transparent;display:block;cursor:pointer;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.toc-link.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+.toc-edit-btn, .toc-del-btn{font-size:10px;cursor:pointer;padding:0 4px;display:none}
+.toc-edit-btn{color:var(--teal)}
+.toc-del-btn{color:#dc2626}
+
+/* MODAL DESIGN */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,25,22,0.45);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-window{background:var(--white);border-radius:14px;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,0.16);width:100%;max-width:540px;padding:32px;display:flex;flex-direction:column;gap:20px}
+.modal-title{font-family:'Gowun Batang',serif;font-size:19px;font-weight:700;color:var(--text);border-bottom:1px solid var(--surface);padding-bottom:10px}
+.modal-body-form{display:flex;flex-direction:column;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.form-input, .form-select{width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:inherit;font-size:14px}
+.form-input:focus, .form-select:focus{outline:none;border-color:var(--accent);background:var(--white)}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;border-top:1px solid var(--surface);padding-top:16px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <button class="back-btn" id="globalBackBtn" onclick="handleBack()">&larr;</button>
+  <span class="logo" onclick="navigate('main')">CHARAVERSE</span>
+  <div class="breadcrumb" id="breadcrumbContainer"></div>
+  <div class="nav-actions">
+    <select class="theme-selector" id="globalThemeSelector" onchange="changeGlobalTheme(this.value)">
+      <option value="light-cotton">☀️ 라이트 코튼</option>
+      <option value="ocean-blue">🌊 오션 블루</option>
+      <option value="dark-neo">🌙 다크 네오</option>
+      <option value="antique-sepia">📜 앤티크 세피아</option>
+    </select>
+    <button class="btn primary" id="globalCharacterEditBtn" style="display:none" onclick="toggleCharacterEditMode()">편집 하기</button>
+  </div>
+</nav>
+
+<div class="app-container">
+  
+  <div id="view-main" class="page-view active layout-main-only">
+    <div class="main-title-area">
+      <h1 class="main-title">창작자 그룹 선택</h1>
+      <button class="btn primary" onclick="openNewCreatorFormPopup()">＋ 창작자 생성</button>
+    </div>
+    <div class="circle-creator-grid" id="mainCircleCreatorGrid"></div>
+  </div>
+
+  <div id="view-creator" class="page-view layout-main-only">
+    <div class="profile-banner-container">
+      <div class="tiny-more-btn" onclick="openCreatorEditModal()">⁝</div>
+      <div class="profile-banner-image-bg" id="creatorViewBannerBg"></div>
+      <div class="profile-banner-info-row">
+        <div class="profile-banner-avatar-box" id="creatorViewAvatarBox"></div>
+        <div class="profile-banner-text">
+          <h2 class="main-title" style="text-align:left; margin:0" id="creatorViewName">이름</h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:6px" id="creatorViewBio">소개글</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-title-area" style="border:none; margin-bottom:10px">
+      <div class="sidebar-label" style="padding:0; margin:0">📁 보유 세계관 / 장르 카테고리</div>
+      <button class="btn primary" onclick="openFolderAddModal()">＋ 폴더 추가</button>
+    </div>
+    <div class="folder-grid" id="folderGridContainer"></div>
+  </div>
+
+  <div id="view-folder" class="page-view layout-main-only">
+    <div class="profile-banner-container">
+      <div class="profile-banner-image-bg" id="folderViewBannerBg" style="height:150px;"></div>
+      <div class="banner-height-control" id="folderBannerHeightControl" style="display:none; position:absolute; bottom:10px; right:10px; color:#fff; font-size:11px; gap:6px; align-items:center;">
+        <span>배너높이</span>
+        <input type="range" min="80" max="260" value="150" oninput="resizeFolderBannerCover(this.value)">
+        <label style="cursor:pointer; background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:3px">📸 사진 등록
+          <input type="file" accept="image/*" style="display:none" onchange="uploadFolderBannerImage(event)">
+        </label>
+      </div>
+    </div>
+
+    <div class="main-title-area" style="margin-bottom:12px">
+      <div>
+        <h2 class="main-title" style="text-align:left; margin-bottom:4px" id="folderViewTitle">폴더</h2>
+        <p style="font-size:13px; color:var(--muted)">장르/세계관 설정 가이드 및 소속 인물 문서</p>
+      </div>
+      <div style="display:flex; gap:6px">
+         <button class="btn" id="folderEditTriggerModeBtn" onclick="toggleFolderSettingEditPanelUi()">설정/배너 편집</button>
+         <button class="btn primary" onclick="openCharacterAddModal()">＋ 캐릭터 추가</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px; padding:14px 16px; background:var(--white); border:1px solid var(--border); border-radius:10px;">
+      <div id="folderWorldTitleDisplay" style="font-size:17px; font-weight:700; color:var(--text); font-family:'Gowun Batang',serif;"></div>
+      <div id="folderWorldSubtitleDisplay" style="font-size:13px; color:var(--muted); margin-top:3px;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:between; align-items:center; margin-bottom:8px">
+      <div style="font-size:12px; font-weight:bold; color:var(--accent); flex:1">📖 세계관 / 장르 설정 및 서사 명세</div>
+      <button class="btn" id="folderSettingPopupInlineBtn" style="display:none; font-size:11px; padding:3px 10px; border-color:var(--accent); color:var(--accent)" onclick="openFolderWorldSettingPopupModal()">✏️ 설정 편집 팝업</button>
+    </div>
+    <div class="prose" id="folderWorldSettingProseView" style="background:transparent; border:none; padding:4px 0; min-height:40px; margin-bottom:28px;">
+      설정이 비어있습니다.
+    </div>
+
+    <div class="sidebar-label" style="padding:0">👥 소속 캐릭터 문서 리스트</div>
+    <div id="characterViewContentWrapper"></div>
+  </div>
+
+  <div id="view-character" class="page-view">
+    <div class="layout-three-col">
+      
+      <aside class="sidebar-left">
+        <div class="sidebar-label">소속 폴더 캐릭터</div>
+        <div class="sidebar-section" id="sidebarCharList"></div>
+      </aside>
+      
+      <main class="main-content" style="padding-right:12px;">
+        <div class="cover" id="charDocumentCover">
+          <div class="banner-height-control" id="coverHeightControlPanel">
+            <span>배너높이</span>
+            <input type="range" min="80" max="300" value="140" oninput="resizeCharacterBannerCover(this.value)">
+            <label style="cursor:pointer; background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:3px">📸 사진 등록
+              <input type="file" accept="image/*" style="display:none" onchange="uploadCharacterCoverImg(event)">
+            </label>
+          </div>
+        </div>
+        <div class="char-profile-header">
+          <div class="char-avatar-box" id="documentAvatar" onclick="handleHeaderIdentityClick()">👤</div>
+          <div>
+            <h1 class="main-title" style="text-align:left; margin:0;" id="docCharName" onclick="handleHeaderIdentityClick()">캐릭터</h1>
+          </div>
+        </div>
+
+        <div class="editor-toolbar" id="wikiEditorToolbar">
+          <button style="font-weight:bold" onclick="document.execCommand('bold', false, null)">B</button>
+          <button style="font-style:italic" onclick="document.execCommand('italic', false, null)">I</button>
+          <button style="text-decoration:underline" onclick="document.execCommand('underline', false, null)">U</button>
+          
+          <select id="editorFontFamilySelector" onchange="changeGlobalFontLayoutEngine(this.value)">
+            <option value="canvas-font-notosans">Noto Sans</option>
+            <option value="canvas-font-gowun">고운 바탕</option>
+            <option value="canvas-font-nanum">나눔 고딕</option>
+          </select>
+
+          <div class="color-picker-wrapper">
+            <span>글자색</span>
+            <input type="color" class="color-input" oninput="document.execCommand('foreColor', false, this.value)">
+          </div>
+
+          <span style="color:var(--border2); margin:0 4px">|</span>
+          <button style="color:var(--teal); font-weight:bold" onclick="openInlineImageInsertModal()">📸 본문 사진</button>
+          <button style="color:var(--accent); font-weight:bold" onclick="openCustomTableInsertPopupModal()">📊 자유 표 삽입</button>
+          <button style="color:var(--accent); font-weight:bold" onclick="executeWikiFootnoteSystemStamp()">📌 [내용 각주]</button>
+          
+          <button style="color:#e066ff; font-weight:bold" onclick="insertSpoilerBlindTemplateToEditor()">👁️ 스포일러 가림막</button>
+          <button style="color:#1a8a72; font-weight:bold" id="radarToggleControlTriggerBtn" onclick="toggleRadarChartBuildVisiblity()">📊 스탯 차트 활성화</button>
+          
+          <button style="color:#dc2626" onclick="deleteCurrentCharacter()">❌ 제명</button>
+        </div>
+
+        <div id="characterRadarChartInteractiveCanvasBox" style="display:none;"></div>
+
+        <div id="dynamicSectionsContainer"></div>
+        
+        <div class="footnote-area-list" id="wikiAutoFootnoteRenderArea" style="display:none;"></div>
+
+        <div style="height:120px"></div>
+      </main>
+
+      <aside class="sidebar-right">
+        <div>
+          <div style="font-size:11px; font-weight:bold; color:var(--muted2); margin-bottom:12px; text-transform:uppercase">내비게이터 목차 맵</div>
+          <div class="toc-container" id="rightTocContainer"></div>
+        </div>
+        <button class="btn primary" id="tocAddBtn" style="font-size:11px; padding:6px; margin-top:10px; width:100%; display:none" onclick="openNewTocModalPopup()">＋ 목록 항목 추가</button>
+      </aside>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="globalModalOverlay">
+  <div class="modal-window" id="modalWindowContent"></div>
+</div>
+
+<script>
+let charaverseDatabase = {
+  "량량": {
+    bio: "동양 판타지와 캐릭터 아카이브",
+    avatar: "", banner: "",
+    folders: [
+      {
+        name: "우리 세계관",
+        desc: "동양풍 판타지 요괴 세계관 명세 모음집",
+        worldTitle: "우리 세계관",
+        worldSubtitle: "동양풍 판타지 요괴 세계관",
+        banner: "", bannerHeight: "150",
+        worldSetting: "본 세계관은 동양풍 판타지를 기반으로 구축되었으며 신수 및 도깨비들이 인간과 상생하는 규칙을 다룹니다.",
+        characters: [
+          { 
+            name: "늘해", avatar: "", isAvatarImg: false, coverImg: "", coverHeight: "140",
+            image: "", imageWidth: "300", imageHeight: "400", imageAlign: "center",
+            useRadar: true,
+            radarData: { "근력": 80, "민첩": 90, "마력": 75, "지력": 85, "생존력": 60, "잠재력": 95 },
+            relationships: {
+              nodes: [
+                { id: "n1", name: "늘해(본인)", x: 150, y: 160, img: "" },
+                { id: "n2", name: "파트너 요괴", x: 500, y: 160, img: "" }
+              ],
+              edges: [
+                { from: "n1", to: "n2", text: "계약 관계", color: "#1982fc" },
+                { from: "n2", to: "n1", text: "수호와 절대 신뢰", color: "#e066ff" }
+              ]
+            },
+            footnotes: [
+              { id: "fn-1", text: "특정 도깨비 가문에서 태어날 때 부여받는 고유의 절대 각인 표식." }
+            ],
+            sections: [
+              { id: "sec-0", title: "0. 전신 비주얼 스탠딩", type: "image" },
+              { id: "sec-1", title: "1. 기본 정보 명세", type: "table", data: [ {k:"종족", v:"도깨비"}, {k:"나이", v:"수백 년"} ] },
+              { id: "sec-2", title: "2. 외형 특징 명세", type: "text", data: "은백색 머리카락과 옅은 회청색 눈동자<a class='wiki-footnote-ref' data-num='1' data-tip='특정 도깨비 가문에서 태어날 때 부여받는 고유의 절대 각인 표식.' href='#fn-link-1' id='fn-ref-1'>[1]</a>를 지녔다." },
+              { id: "sec-3", title: "3. 숨겨진 내막 과거사", type: "text", data: `<div class="spoiler-container" contenteditable="false"><div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)"><div class="spoiler-blind-title">⚠️ 잠겨진 스포일러 주의 구역</div><div class="spoiler-blind-desc">캐릭터의 진상 및 과거 반전 명세를 보려면 클릭하세요.</div></div><div class="spoiler-content" contenteditable="true">사실 늘해는 일반 도깨비 가문 출신이 아닌, 멸망한 신수 혈통의 유일한 생존자라는 사실이 후반부 서사에서 밝혀진다.</div></div>` }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+};
+
+let navigationHistory = [];
+let currentView = 'main';
+let currentCreator = '';
+let currentFolder = '';
+let currentCharacter = '';
+let isCharacterEditMode = false;
+let isFolderEditUiActive = false;
+let globalSelectedFontClass = 'canvas-font-notosans';
+let savedSelectionRange = null;
+
+window.onload = function() {
+  renderCircleCreatorGrid();
+  updateNavbar();
+};
+
+function changeGlobalTheme(val) { document.documentElement.setAttribute('data-theme', val); }
+function changeGlobalFontLayoutEngine(fontClass) {
+  globalSelectedFontClass = fontClass;
+  renderCharacterDocument();
+}
+
+function updateNavbar() {
+  document.getElementById('globalBackBtn').style.visibility = (navigationHistory.length > 0) ? 'visible' : 'hidden';
+}
+
+function navigate(view, creator = '', folder = '', character = '', isBackAction = false) {
+  if (!isBackAction && view !== currentView) {
+    navigationHistory.push({ view: currentView, creator: currentCreator, folder: currentFolder, character: currentCharacter });
+  }
+  
+  currentView = view; currentCreator = creator; currentFolder = folder; currentCharacter = character;
+  isCharacterEditMode = false; isFolderEditUiActive = false;
+  updateNavbar();
+
+  document.getElementById('globalCharacterEditBtn').textContent = '편집 하기';
+  document.getElementById('globalCharacterEditBtn').style.background = '';
+  document.getElementById('wikiEditorToolbar').style.display = 'none';
+  document.getElementById('tocAddBtn').style.display = 'none';
+  document.getElementById('coverHeightControlPanel').style.display = 'none';
+  document.getElementById('folderBannerHeightControl').style.display = 'none';
+  document.getElementById('folderSettingPopupInlineBtn').style.display = 'none';
+  document.getElementById('folderEditTriggerModeBtn').textContent = "설정/배너 편집";
+
+  document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('globalCharacterEditBtn').style.display = (view === 'character') ? 'block' : 'none';
+
+  const bc = document.getElementById('breadcrumbContainer');
+  let html = `<span class="link" onclick="clearToMain()">CHARAVERSE</span>`;
+  if (creator) html += ` <span class="sep">›</span> <span class="link" onclick="navigate('creator','${creator}')">${creator}</span>`;
+  if (folder) html += ` <span class="sep">›</span> <span class="link" onclick="navigate('folder','${creator}','${folder}')">${folder}</span>`;
+  if (character) html += ` <span class="sep">›</span> <span class="sep" style="color:var(--text); font-weight:700">${character}</span>`;
+  bc.innerHTML = html;
+
+  if (view === 'main') { renderCircleCreatorGrid(); document.getElementById('view-main').classList.add('active'); }
+  else if (view === 'creator') { renderCreatorProfilePage(); document.getElementById('view-creator').classList.add('active'); }
+  else if (view === 'folder') { renderFolderContentPage(); document.getElementById('view-folder').classList.add('active'); }
+  else if (view === 'character') { renderCharacterDocument(); document.getElementById('view-character').classList.add('active'); }
+}
+
+function handleBack() {
+  if (navigationHistory.length > 0) {
+    const prev = navigationHistory.pop();
+    navigate(prev.view, prev.creator, prev.folder, prev.character, true);
+  }
+}
+function clearToMain() { navigationHistory = []; navigate('main'); }
+
+function renderCircleCreatorGrid() {
+  let gridHtml = '';
+  Object.keys(charaverseDatabase).forEach(name => {
+    const current = charaverseDatabase[name];
+    let avatarHtml = current.avatar ? `<img src="${current.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<div class="circle-avatar-placeholder">${name[0]}</div>`;
+    gridHtml += `<div class="circle-creator-node" onclick="navigate('creator', '${name}')">
+      <div class="circle-avatar-wrapper">${avatarHtml}</div>
+      <div class="circle-creator-name">${name}</div>
+    </div>`;
+  });
+  document.getElementById('mainCircleCreatorGrid').innerHTML = gridHtml || '<div class="empty-placeholder-box">등록된 창작 멤버가 없습니다.</div>';
+}
+
+function openNewCreatorFormPopup() {
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">신규 창작자 그룹 추가</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">창작자 그룹 명칭</label><input type="text" id="addCrName" class="form-input" placeholder="예: 팀 아카이브"></div>
+      <div class="form-group"><label class="form-label">한 줄 프로필 소개글</label><input type="text" id="addCrBio" class="form-input" placeholder="소개 설명을 적어주세요."></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitNewCreator()">등록 하기</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitNewCreator() {
+  const name = document.getElementById('addCrName').value.trim(); if(!name) return alert('명칭을 기입해주세요.');
+  charaverseDatabase[name] = { bio: document.getElementById('addCrBio').value.trim() || "CHARAVERSE 창작 멤버", avatar: "", banner: "", folders: [] };
+  closeGlobalModal(); renderCircleCreatorGrid();
+}
+
+function renderCreatorProfilePage() {
+  const target = charaverseDatabase[currentCreator];
+  document.getElementById('creatorViewName').textContent = currentCreator;
+  const bioEl = document.getElementById('creatorViewBio');
+  bioEl.innerHTML = (target.bio || "설정된 소개글이 없습니다.").replace(/\n/g, '<br>');
+  bioEl.style.whiteSpace = 'pre-wrap';
+  document.getElementById('creatorViewAvatarBox').innerHTML = target.avatar ? `<img src="${target.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="width:100%; height:100%; background:var(--accent-bg); color:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:24px">${currentCreator[0]}</div>`;
+  document.getElementById('creatorViewBannerBg').style.backgroundImage = target.banner ? `url('${target.banner}')` : '';
+
+  let fHtml = '';
+  target.folders.forEach((f, idx) => {
+    fHtml += `<div class="folder-card" onclick="navigate('folder', '${currentCreator}', '${f.name}')">
+      <div><div class="folder-card-title">📁 ${f.name}</div><div class="folder-card-desc">${f.desc}</div></div>
+    </div>`;
+  });
+  document.getElementById('folderGridContainer').innerHTML = fHtml || '<div class="empty-placeholder-box">생성된 폴더 카테고리가 없습니다.</div>';
+}
+
+function openCreatorEditModal() {
+  const target = charaverseDatabase[currentCreator];
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">창작자 정보 및 비주얼 설정</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">창작자 이름</label><input type="text" id="editCrName" class="form-input" value="${currentCreator}"></div>
+      <div class="form-group"><label class="form-label">한 줄 프로필 요약 (엔터로 줄바꿈 가능)</label><textarea id="editCrBio" class="form-input" style="height:80px; resize:vertical;">${target.bio || ''}</textarea></div>
+      <div class="form-group"><label class="form-label">프로필 사진</label><input type="file" accept="image/*" class="form-input" onchange="processModalImageFile(this, 'avatar')"></div>
+      <div class="form-group"><label class="form-label">배경 배너 사진</label><input type="file" accept="image/*" class="form-input" onchange="processModalImageFile(this, 'banner')"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitCreatorEditForm()">설정 저장</button></div>`;
+  window.tempAvatarData = target.avatar; window.tempBannerData = target.banner;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function processModalImageFile(input, mode) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if(mode === 'avatar') window.tempAvatarData = e.target.result;
+    if(mode === 'banner') window.tempBannerData = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function submitCreatorEditForm() {
+  const nextName = document.getElementById('editCrName').value.trim(); if(!nextName) return;
+  if(nextName !== currentCreator) { charaverseDatabase[nextName] = charaverseDatabase[currentCreator]; delete charaverseDatabase[currentCreator]; currentCreator = nextName; }
+  charaverseDatabase[currentCreator].bio = document.getElementById('editCrBio').value.trim();
+  charaverseDatabase[currentCreator].avatar = window.tempAvatarData || "";
+  charaverseDatabase[currentCreator].banner = window.tempBannerData || "";
+  closeGlobalModal(); renderCreatorProfilePage();
+}
+
+function openFolderAddModal() {
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">새로운 세계관 / 장르 폴더 생성</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">폴더 카테고리 이름</label><input type="text" id="newFolderName" class="form-input"></div>
+      <div class="form-group"><label class="form-label">폴더 요약 설명</label><input type="text" id="newFolderDesc" class="form-input"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitAddNewFolder()">폴더 추가 완료</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitAddNewFolder() {
+  const name = document.getElementById('newFolderName').value.trim(); if(!name) return;
+  charaverseDatabase[currentCreator].folders.push({ 
+    name: name, desc: document.getElementById('newFolderDesc').value.trim(), banner: "", bannerHeight: "150",
+    worldTitle: name, worldSubtitle: document.getElementById('newFolderDesc').value.trim(),
+    worldSetting: "해당 장르 및 세계관의 핵심 설정 규칙이나 스토리를 기입해 보세요.", characters: [] 
+  });
+  closeGlobalModal(); renderCreatorProfilePage();
+}
+
+function renderFolderContentPage() {
+  const fData = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
+  document.getElementById('folderViewTitle').textContent = `📁 ${fData.name}`;
+  document.getElementById('folderWorldTitleDisplay').textContent = fData.worldTitle || fData.name;
+  document.getElementById('folderWorldSubtitleDisplay').textContent = fData.worldSubtitle || fData.desc || "";
+  const bBg = document.getElementById('folderViewBannerBg');
+  bBg.style.height = (fData.bannerHeight || 150) + "px";
+  bBg.style.backgroundImage = fData.banner ? `url('${fData.banner}')` : '';
+  document.getElementById('folderWorldSettingProseView').innerHTML = fData.worldSetting || "설정된 세계관 가이드가 비어있습니다.";
+
+  const container = document.getElementById('characterViewContentWrapper');
+  if(!fData.characters || fData.characters.length === 0) {
+    container.innerHTML = `<div class="empty-placeholder-box" style="margin-top:14px;">이 세계관에 등록 설정된 소속 캐릭터 프로필 카드가 비어있습니다.</div>`;
+    return;
+  }
+  let cHtml = '<div class="char-card-grid">';
+  fData.characters.forEach(c => {
+    let symHtml = c.isAvatarImg && c.avatar ? `<img src="${c.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<span class="char-card-symbol-txt">${c.avatar || '👤'}</span>`;
+    cHtml += `<div class="char-card" onclick="navigate('character', '${currentCreator}', '${currentFolder}', '${c.name}')">
+      <div class="char-card-thumb">${symHtml}</div><div class="char-card-body"><div class="char-card-name">${c.name}</div></div>
+    </div>`;
+  });
+  container.innerHTML = cHtml + '</div>';
+}
+
+function toggleFolderSettingEditPanelUi() {
+  isFolderEditUiActive = !isFolderEditUiActive;
+  const ctrlPanel = document.getElementById('folderBannerHeightControl');
+  const popupBtn = document.getElementById('folderSettingPopupInlineBtn');
+  const triggerBtn = document.getElementById('folderEditTriggerModeBtn');
+  if(isFolderEditUiActive) {
+    ctrlPanel.style.display = "flex"; popupBtn.style.display = "block"; triggerBtn.textContent = "편집 완료 및 저장";
+  } else {
+    ctrlPanel.style.display = "none"; popupBtn.style.display = "none"; triggerBtn.textContent = "설정/배너 편집";
+  }
+}
+
+function openFolderWorldSettingPopupModal() {
+  const fData = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">📖 세계관 설정 집필 팝업</div>
+    <div class="modal-body-form">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+        <div class="form-group"><label class="form-label">세계관 이름</label><input type="text" id="modalWorldTitle" class="form-input" placeholder="예: 동방 요괴 대전기" value="${fData.worldTitle || fData.name || ''}"></div>
+        <div class="form-group"><label class="form-label">부가 설명 (한 줄)</label><input type="text" id="modalWorldSubtitle" class="form-input" placeholder="예: 동양풍 판타지 세계관" value="${fData.worldSubtitle || fData.desc || ''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">세계관 상세 설정 서술</label><textarea id="modalWorldSettingTextarea" class="form-input" style="height:220px; resize:vertical;">${fData.worldSetting || ''}</textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitFolderWorldSettingTextPopup()">설정 저장</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitFolderWorldSettingTextPopup() {
+  const fData = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
+  fData.worldSetting = document.getElementById('modalWorldSettingTextarea').value;
+  fData.worldTitle = document.getElementById('modalWorldTitle').value.trim() || fData.name;
+  fData.worldSubtitle = document.getElementById('modalWorldSubtitle').value.trim();
+  closeGlobalModal(); renderFolderContentPage();
+}
+function resizeFolderBannerCover(val) {
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).bannerHeight = val;
+  document.getElementById('folderViewBannerBg').style.height = val + "px";
+}
+function uploadFolderBannerImage(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader(); reader.onload = function(evt) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).banner = evt.target.result;
+    document.getElementById('folderViewBannerBg').style.backgroundImage = `url('${evt.target.result}')`;
+  }; reader.readAsDataURL(file);
+}
+
+function openCharacterAddModal() {
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">새로운 캐릭터 프로필 추가</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">캐릭터 이름</label><input type="text" id="newCharName" class="form-input"></div>
+      <div class="form-group"><label class="form-label">식별 대표 심볼 기호</label><input type="text" id="newCharAvatar" class="form-input" value="👤"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitAddNewCharacter()">캐릭터 추가 완료</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitAddNewCharacter() {
+  const name = document.getElementById('newCharName').value.trim(); if(!name) return alert("이름을 입력하세요.");
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.push({
+    name: name, avatar: document.getElementById('newCharAvatar').value.trim() || "👤", isAvatarImg: false, coverImg: "", coverHeight: "140",
+    image: "", imageWidth: "300", imageHeight: "400", imageAlign: "center", useRadar: false,
+    radarData: { "근력": 50, "민첩": 50, "마력": 50, "지력": 50, "생존력": 50, "잠재력": 50 },
+    relationships: { nodes: [], edges: [] }, footnotes: [],
+    sections: [
+      { id: "sec-0", title: "0. 전신 비주얼 스탠딩", type: "image" },
+      { id: "sec-1", title: "1. 기본 정보 명세", type: "table", data: [ {k:"종족", v:"인간"}, {k:"나이", v:"미정"} ] },
+      { id: "sec-2", title: "2. 상세 특징 서술", type: "text", data: "이곳에 특징 요약을 집필해 보세요." }
+    ]
+  });
+  closeGlobalModal(); renderFolderContentPage();
+}
+
+/* ==================== 🛠️ 나무위키 실시간 주석 엔진 완전 수리 파트 ==================== */
+function saveSelectionCacheRange() {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) { savedSelectionRange = sel.getRangeAt(0).cloneRange(); }
+}
+
+function executeWikiFootnoteSystemStamp() {
+  saveSelectionCacheRange();
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">📌 단어 실시간 각주 주석 달기</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">각주 상세 내용 입력 (나무위키 스타일)</label><input type="text" id="modalFootnoteInputText" class="form-input" placeholder="상세 설명을 적어주세요."></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitWikiFootnoteInsertStamp()">즉시 각주 스탬프 주입</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+
+function submitWikiFootnoteInsertStamp() {
+  const txt = document.getElementById('modalFootnoteInputText').value.trim(); if(!txt) return;
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  
+  const nextNum = char.footnotes.length + 1;
+  char.footnotes.push({ id: `fn-${nextNum}`, text: txt });
+
+  closeGlobalModal();
+
+  // 이전 마운트 포커스 캐시 복원 후 정밀 마킹 코드 주입
+  const node = document.createElement('a');
+  node.className = "wiki-footnote-ref";
+  node.id = `fn-ref-${nextNum}`;
+  node.setAttribute('href', `#fn-link-${nextNum}`);
+  node.setAttribute('data-num', nextNum);
+  node.setAttribute('data-tip', txt);
+  node.textContent = `[${nextNum}]`;
+
+  const sel = window.getSelection();
+  if (savedSelectionRange) {
+    sel.removeAllRanges();
+    sel.addRange(savedSelectionRange);
+    savedSelectionRange.insertNode(node);
+    savedSelectionRange.collapse(false);
+  } else {
+    // 커서 유실 안전장치용 활성 에디터 최하단 수동 추가 트리거
+    const fallback = document.querySelector('.edit-active');
+    if(fallback) fallback.appendChild(node);
+  }
+  
+  renderAutoFootnoteListViewArea();
+}
+
+function renderAutoFootnoteListViewArea() {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const area = document.getElementById('wikiAutoFootnoteRenderArea');
+  if(!char.footnotes || char.footnotes.length === 0) { area.style.display = "none"; return; }
+  area.style.display = "block";
+  let html = `<div style="font-weight:bold; font-size:12px; margin-bottom:8px; color:var(--text)">[각주 주석 명세 리스트]</div>`;
+  char.footnotes.forEach(f => {
+    const num = f.id.replace('fn-', '');
+    html += `<div class="footnote-item" id="fn-link-${num}">
+      <a class="footnote-num" onclick="document.getElementById('fn-ref-${num}').scrollIntoView({behavior:'smooth'})">[${num}]</a>
+      <span class="footnote-text">${f.text}</span>
+    </div>`;
+  });
+  area.innerHTML = html;
+}
+
+/* ==================== 🛠️ 커스텀 에디터 내 즉각 표(Table) 주입 완전 수리 파트 ==================== */
+function openCustomTableInsertPopupModal() {
+  saveSelectionCacheRange();
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">📊 자유 커스텀 표 삽입 및 테두리/색상 세팅</div>
+    <div class="modal-body-form">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+        <div class="form-group"><label class="form-label">행 개수</label><input type="number" id="tblRows" class="form-input" value="2" min="1"></div>
+        <div class="form-group"><label class="form-label">열 개수</label><input type="number" id="tblCols" class="form-input" value="2" min="1"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">테두리 종류 모양</label>
+        <select id="tblBorderStyle" class="form-select">
+          <option value="solid">━━━━ 실선 (Solid)</option>
+          <option value="dashed">----------- 점선 (Dashed)</option>
+          <option value="double">════ 이중선 (Double)</option>
+        </select>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+        <div class="form-group"><label class="form-label">칸 내부 색칠 배경색</label><input type="color" id="tblCellBgColor" class="form-input" value="#ffffff" style="height:42px; padding:2px"></div>
+        <div class="form-group"><label class="form-label">테두리 선 컬러</label><input type="color" id="tblBorderColor" class="form-input" value="#ccc9c2" style="height:42px; padding:2px"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitEmbedCustomTableToProseContent()">표 생성 즉시 주입</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+
+function submitEmbedCustomTableToProseContent() {
+  const r = parseInt(document.getElementById('tblRows').value) || 2;
+  const c = parseInt(document.getElementById('tblCols').value) || 2;
+  const bStyle = document.getElementById('tblBorderStyle').value;
+  const bg = document.getElementById('tblCellBgColor').value;
+  const bColor = document.getElementById('tblBorderColor').value;
+  closeGlobalModal();
+
+  let div = document.createElement('div');
+  div.style.margin = "12px 0";
+  let tHtml = `<table style="width:100%; border-collapse:collapse; border:2px ${bStyle} ${bColor};">`;
+  for(let i=0; i<r; i++) {
+    tHtml += `<tr>`;
+    for(let j=0; j<c; j++) {
+      tHtml += `<td contenteditable="true" style="padding:10px; border:1px ${bStyle} ${bColor}; background-color:${bg}; min-width:60px">내용</td>`;
+    }
+    tHtml += `</tr>`;
+  }
+  tHtml += `</table><p><br></p>`;
+  div.innerHTML = tHtml;
+
+  const sel = window.getSelection();
+  if(savedSelectionRange) {
+    sel.removeAllRanges();
+    sel.addRange(savedSelectionRange);
+    savedSelectionRange.insertNode(div);
+    savedSelectionRange.collapse(false);
+  } else {
+    const fallback = document.querySelector('.edit-active');
+    if(fallback) fallback.appendChild(div);
+  }
+}
+
+/* ==================== 👁️ 과거사 분리 및 스포일러 가림막 컴포넌트 엔진 ==================== */
+function insertSpoilerBlindTemplateToEditor() {
+  saveSelectionCacheRange();
+  const html = `
+    <div class="spoiler-container" contenteditable="false" style="border: 1px dashed #c24070; background: #fff5f8; padding:14px; position:relative; border-radius:8px; margin:10px 0;">
+      <div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #2d2327, #4a353d); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:6px; z-index:20;">
+        <span style="font-weight:bold; font-size:13px; color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span>
+        <span style="font-size:11px; opacity:0.8;">클릭 시 가림막이 해제되며 숨겨진 과거사 및 반전 내막이 표출됩니다.</span>
+      </div>
+      <div class="spoiler-content" contenteditable="true" style="opacity:0.2; pointer-events:none;">이곳에 비밀 가림막으로 숨겨둘 과거사/흑막 명세를 집필하세요.</div>
+    </div><p><br></p>`;
+  
+  const div = document.createElement('div'); div.innerHTML = html;
+  const sel = window.getSelection();
+  if(savedSelectionRange) {
+    sel.removeAllRanges(); sel.addRange(savedSelectionRange);
+    savedSelectionRange.insertNode(div); savedSelectionRange.collapse(false);
+  } else {
+    const active = document.querySelector('.edit-active');
+    if(active) active.appendChild(div);
+  }
+}
+function unveilSpoilerContainerDirect(blindElement) {
+  const container = blindElement.closest('.spoiler-container');
+  if(container) {
+    container.classList.add('unveiled');
+    const content = container.querySelector('.spoiler-content');
+    if(content) { content.style.opacity = "1"; content.style.pointerEvents = "auto"; }
+    blindElement.remove();
+  }
+}
+
+/* ==================== 📊 방사형 레이더 스탯 차트(Radar Chart) 라이브 렌더 엔진 ==================== */
+function toggleRadarChartBuildVisiblity() {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.useRadar = !char.useRadar;
+  renderCharacterDocument();
+  if(isCharacterEditMode) {
+     isCharacterEditMode = false; toggleCharacterEditMode(); // 상태 토글 동기화 유지
+  }
+}
+
+function updateLiveRadarStatValue(statName, val) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.radarData[statName] = parseInt(val);
+  document.getElementById(`lblStatVal-${statName}`).textContent = val;
+  drawCharacterRadarGraphicSvg(char.radarData);
+}
+
+function renameRadarStat(oldName, newName) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!newName || newName === oldName) return;
+  const newData = {};
+  Object.keys(char.radarData).forEach(k => { newData[k === oldName ? newName : k] = char.radarData[k]; });
+  char.radarData = newData;
+  drawCharacterRadarGraphicSvg(char.radarData);
+}
+
+function deleteRadarStat(statName) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(Object.keys(char.radarData).length <= 3) return alert('스탯은 최소 3개 이상 유지해야 합니다.');
+  delete char.radarData[statName];
+  drawCharacterRadarGraphicSvg(char.radarData);
+}
+
+function addRadarStat() {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(Object.keys(char.radarData).length >= 8) return alert('스탯은 최대 8개까지 추가할 수 있습니다.');
+  const name = prompt('새 스탯 이름을 입력하세요:', '새 스탯');
+  if(!name || char.radarData[name] !== undefined) return;
+  char.radarData[name] = 50;
+  drawCharacterRadarGraphicSvg(char.radarData);
+}
+
+function updateRadarChartTitle(val) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.radarTitle = val;
+  const titleEl = document.getElementById('radarChartTitleTextEl');
+  if(titleEl) titleEl.textContent = val;
+}
+
+function drawCharacterRadarGraphicSvg(data) {
+  const container = document.getElementById('characterRadarChartInteractiveCanvasBox');
+  if(!container) return;
+  const char = (currentCreator && currentFolder && currentCharacter) 
+    ? charaverseDatabase[currentCreator]?.folders?.find(f => f.name === currentFolder)?.characters?.find(c => c.name === currentCharacter)
+    : null;
+  
+  const keys = Object.keys(data); const total = keys.length;
+  const center = 120; const radius = 80;
+  
+  let gridPaths = "";
+  for(let r=1; r<=4; r++) {
+    let curR = (radius / 4) * r; let pStr = "";
+    for(let i=0; i<total; i++) {
+      let angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+      let x = center + curR * Math.cos(angle); let y = center + curR * Math.sin(angle);
+      pStr += (i === 0 ? "M" : "L") + ` ${x} ${y}`;
+    }
+    gridPaths += `<path d="${pStr} Z" fill="none" stroke="var(--border2)" stroke-width="1" />`;
+  }
+
+  let axisLines = ""; let labelTexts = ""; let polyPoints = [];
+  keys.forEach((k, i) => {
+    let angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+    let ax = center + radius * Math.cos(angle); let ay = center + radius * Math.sin(angle);
+    axisLines += `<line x1="${center}" y1="${center}" x2="${ax}" y2="${ay}" stroke="var(--border)" stroke-width="1" />`;
+
+    let lx = center + (radius + 22) * Math.cos(angle); let ly = center + (radius + 10) * Math.sin(angle);
+    labelTexts += `<text x="${lx}" y="${ly}" font-size="11px" font-weight="bold" fill="var(--text)" text-anchor="middle">${k}(${data[k]})</text>`;
+
+    let valR = (radius * (data[k] / 100));
+    let px = center + valR * Math.cos(angle); let py = center + valR * Math.sin(angle);
+    polyPoints.push(`${px},${py}`);
+  });
+
+  let innerEditorRow = "";
+  if(isCharacterEditMode) {
+    innerEditorRow += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+      <span style="font-weight:bold; color:var(--teal); font-size:12px">🛠️ 스탯 편집 패널</span>
+      <button onclick="addRadarStat()" style="font-size:11px; padding:3px 8px; border:1px solid var(--teal); border-radius:4px; color:var(--teal); cursor:pointer; background:none">＋ 스탯 추가</button>
+    </div>`;
+    keys.forEach(k => {
+      const safeK = k.replace(/'/g, "\\'");
+      innerEditorRow += `<div class="radar-stat-row" style="grid-template-columns: auto 1fr 40px 22px 22px; gap:6px">
+        <input type="text" value="${k}" style="font-size:11px; border:1px solid var(--border2); border-radius:4px; padding:2px 6px; width:68px; background:var(--white); color:var(--text)"
+          onblur="renameRadarStat('${safeK}', this.value)">
+        <input type="range" min="1" max="100" value="${data[k]}" oninput="updateLiveRadarStatValue('${safeK}', this.value)">
+        <b id="lblStatVal-${k}" style="font-size:11px">${data[k]}</b>
+        <button onclick="deleteRadarStat('${safeK}')" style="font-size:11px; border:none; background:none; color:#dc2626; cursor:pointer; font-weight:bold" title="삭제">✕</button>
+      </div>`;
+    });
+  }
+
+  container.innerHTML = `
+    <div class="radar-chart-outer-box ${globalSelectedFontClass}">
+      <div style="font-size:13px; font-weight:bold; color:var(--accent); display:flex; align-items:center; gap:6px;">
+        📊 <span id="radarChartTitleTextEl" 
+          contenteditable="${isCharacterEditMode}" 
+          style="outline:none; border-bottom:${isCharacterEditMode?'1px dashed var(--accent)':'none'}; min-width:60px;"
+          onblur="updateRadarChartTitle(this.textContent)"
+          title="${isCharacterEditMode?'클릭해서 제목 수정':''}">
+          ${char && char.radarTitle ? char.radarTitle : '인물 다면 능력치 스탯 등급 맵'}
+        </span>
+      </div>
+      <div class="radar-chart-wrapper">
+        <svg width="240" height="240">
+          ${gridPaths} ${axisLines}
+          <polygon points="${polyPoints.join(' ')}" fill="rgba(107, 79, 216, 0.22)" stroke="var(--accent)" stroke-width="2.5" />
+          ${labelTexts}
+        </svg>
+      </div>
+      <div class="radar-chart-editor-panel" id="radarChartEditorPanelBoxUi" style="display:${isCharacterEditMode?'flex':'none'}">
+         ${innerEditorRow}
+      </div>
+    </div>`;
+}
+
+/* ==================== 🎨 지능형 실시간 마크다운 및 나무위키 단축키 파서 ==================== */
+function executeLiveMarkdownShortcutParser(element) {
+  let html = element.innerHTML;
+  let originalLength = html.length;
+
+  // 1. 나무위키 스타일 굵게 매크로 (''텍스트'') -> <strong>
+  html = html.replace(/''([^']+)''/g, "<strong>$1</strong>");
+  // 2. 마크다운 스타일 굵게 (**텍스트**) -> <strong>
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // 3. 마크다운 스타일 기울임 (*텍스트*) -> <em>
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  // 4. 마크다운 스타일 밑줄 (__텍스트__) -> <u>
+  html = html.replace(/__([^_]+)__/g, "<u>$1</u>");
+
+  if(html.length !== originalLength) {
+    // 커서 이탈 방지형 롤백 트리거 주입
+    let selection = window.getSelection();
+    let range = selection.getRangeAt(0);
+    let offset = range.startOffset;
+    element.innerHTML = html;
+    
+    // 포커스 세이프 재설정
+    let newRange = document.createRange();
+    newRange.setStart(element, element.childNodes.length);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+  }
+}
+
+/* ==================== 🛠️ 관계도 쌍방 곡선 분리 및 정밀 연산 고도화 ==================== */
+function initInteractiveCanvasEngine(rel) {
+  const viewport = document.getElementById('relCanvasViewport');
+  const svg = document.getElementById('relSvgLayer'); if(!viewport || !svg) return;
+  viewport.querySelectorAll('.rel-node-circle').forEach(n => n.remove());
+
+  rel.nodes.forEach(nd => {
+    const nodeEl = document.createElement('div');
+    nodeEl.className = "rel-node-circle"; nodeEl.id = `nodeEl-${nd.id}`;
+    nodeEl.style.left = nd.x + "px"; nodeEl.style.top = nd.y + "px";
+    let avHtml = nd.img ? `<img src="${nd.img}" style="width:100%; height:100%; object-fit:cover;">` : `👤`;
+    nodeEl.innerHTML = `
+      <button class="rel-node-x-btn" onclick="deleteCanvasNodeEntity(event, '${nd.id}')">X</button>
+      <div class="rel-node-avatar-slot" onclick="triggerCanvasNodeImgUpload('${nd.id}')">${avHtml}</div>
+      <div class="rel-node-text-label" contenteditable="${isCharacterEditMode}" onblur="updateCanvasNodeNameInline('${nd.id}', this)">${nd.name}</div>
+      <div class="rel-node-drag-handle" id="handle-${nd.id}">✛</div>
+      <input type="file" id="fileNode-${nd.id}" accept="image/*" style="display:none" onchange="uploadCanvasNodeImgInline(event, '${nd.id}')">`;
+    viewport.appendChild(nodeEl);
+
+    if(isCharacterEditMode) {
+      nodeEl.querySelector('.rel-node-x-btn').style.display = 'flex';
+      const handleEl = nodeEl.querySelector('.rel-node-drag-handle');
+      handleEl.style.display = 'flex'; setupDragAndDropEvents(handleEl, nodeEl, nd, rel);
+    }
+  });
+  drawRelationshipArrowsSvg(rel);
+}
+
+function drawRelationshipArrowsSvg(rel) {
+  const svg = document.getElementById('relSvgLayer'); if(!svg) return;
+  svg.innerHTML = `<defs></defs>`;
+
+  const pairCountMap = {};
+  rel.edges.forEach(ed => {
+    const pairId = [ed.from, ed.to].sort().join('-');
+    pairCountMap[pairId] = (pairCountMap[pairId] || 0) + 1;
+  });
+  
+  const currentPairTrack = {};
+
+  rel.edges.forEach((ed) => {
+    const fromNd = rel.nodes.find(n => n.id === ed.from);
+    const toNd = rel.nodes.find(n => n.id === ed.to); if(!fromNd || !toNd) return;
+
+    const fx = fromNd.x + 35; const fy = fromNd.y + 35;
+    const tx = toNd.x + 35; const ty = toNd.y + 35;
+
+    const pairId = [ed.from, ed.to].sort().join('-');
+    currentPairTrack[pairId] = (currentPairTrack[pairId] || 0) + 1;
+
+    const totalInPair = pairCountMap[pairId];
+    const dx = tx - fx; const dy = ty - fy;
+    const dist = Math.sqrt(dx * dx + dy * dy); if(dist === 0) return;
+    const angle = Math.atan2(dy, dx);
+
+    // 노드 테두리에 화살표 마커가 닿도록 안쪽 여백 반지름 보정
+    const startX = fx + 35 * Math.cos(angle); const startY = fy + 35 * Math.sin(angle);
+    const endX = tx - 38 * Math.cos(angle); const endY = ty - 38 * Math.sin(angle);
+
+    let pathD = `M ${startX} ${startY} L ${endX} ${endY}`;
+    let textX = (startX + endX) / 2; let textY = (startY + endY) / 2;
+
+    /* [피드백 반영] 왕복 화살표가 마주보고 있을 경우 곡률 방향을 분리 연산하여 절대 겹치지 않게 고도화 */
+    if (totalInPair > 1) {
+      const pairIndex = currentPairTrack[pairId]; // 1 또는 2
+      // 첫 번째 화살표는 위쪽, 두 번째는 아래쪽으로 분리
+      const curveFactor = pairIndex === 1 ? 55 : -55;
+      const midX = (fx + tx) / 2; const midY = (fy + ty) / 2;
+      const nx = -Math.sin(angle); const ny = Math.cos(angle);
+      
+      const cpX = midX + nx * curveFactor; const cpY = midY + ny * curveFactor;
+
+      const sAngle = Math.atan2(cpY - fy, cpX - fx);
+      const eAngle = Math.atan2(cpY - ty, cpX - tx);
+
+      const adjStartX = fx + 35 * Math.cos(sAngle); const adjStartY = fy + 35 * Math.sin(sAngle);
+      const adjEndX = tx + 38 * Math.cos(eAngle); const adjEndY = ty + 38 * Math.sin(eAngle);
+
+      pathD = `M ${adjStartX} ${adjStartY} Q ${cpX} ${cpY} ${adjEndX} ${adjEndY}`;
+      textX = (adjStartX + cpX * 2 + adjEndX) / 4; textY = (adjStartY + cpY * 2 + adjEndY) / 4;
+      
+      // 왕복선 자막 충돌 방지 오프셋 보완
+      textY += pairIndex === 1 ? -16 : 16;
+    } else {
+      textY -= 8;
+    }
+
+    const markerId = `marker-${ed.from}-${ed.to}`;
+    svg.querySelector('defs').innerHTML += `
+      <marker id="${markerId}" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L6,3 Z" fill="${ed.color || '#a09e96'}" />
+      </marker>`;
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathD); path.setAttribute("stroke", ed.color || "var(--border2)");
+    path.setAttribute("stroke-width", "2.5"); path.setAttribute("fill", "none");
+    path.setAttribute("marker-end", `url(#${markerId})`); svg.appendChild(path);
+
+    const tEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    tEl.setAttribute("x", textX); tEl.setAttribute("y", textY);
+    tEl.setAttribute("fill", ed.color || "var(--text)"); tEl.setAttribute("font-size", "11px");
+    tEl.setAttribute("font-weight", "bold"); tEl.setAttribute("text-anchor", "middle");
+    tEl.textContent = ed.text; svg.appendChild(tEl);
+  });
+}
+
+function setupDragAndDropEvents(handle, el, nodeData, rel) {
+  let isDragging = false; let startX, startY;
+  handle.addEventListener('mousedown', (e) => {
+    e.stopPropagation(); e.preventDefault(); isDragging = true;
+    startX = e.clientX - nodeData.x; startY = e.clientY - nodeData.y;
+  });
+  document.addEventListener('mousemove', (e) => {
+    if(!isDragging) return;
+    let nextX = e.clientX - startX; let nextY = e.clientY - startY;
+    nextX = Math.max(0, Math.min(nextX, 750)); nextY = Math.max(0, Math.min(nextY, 380));
+    nodeData.x = nextX; nodeData.y = nextY;
+    el.style.left = nextX + "px"; el.style.top = nextY + "px";
+    drawRelationshipArrowsSvg(rel);
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; });
+}
+
+function updateCanvasNodeNameInline(id, element) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.name = element.textContent.trim();
+  drawRelationshipArrowsSvg(char.relationships);
+}
+function triggerCanvasNodeImgUpload(id) { if(isCharacterEditMode) document.getElementById(`fileNode-${id}`).click(); }
+function uploadCanvasNodeImgInline(e, id) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader(); reader.onload = function(evt) {
+    const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = evt.target.result;
+    initInteractiveCanvasEngine(char.relationships);
+  }; reader.readAsDataURL(file);
+}
+function addNewRelNodeOnCanvas() {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.relationships.nodes.push({ id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" });
+  initInteractiveCanvasEngine(char.relationships);
+}
+function deleteCanvasNodeEntity(e, id) {
+  e.stopPropagation();
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.relationships.nodes = char.relationships.nodes.filter(n => n.id !== id);
+  char.relationships.edges = char.relationships.edges.filter(ed => ed.from !== id && ed.to !== id);
+  initInteractiveCanvasEngine(char.relationships);
+}
+
+/* 위키 종합 도큐먼트 빌더 엔진 */
+function renderCharacterDocument() {
+  const fol = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
+  const char = fol.characters.find(c => c.name === currentCharacter);
+
+  document.getElementById('docCharName').textContent = char.name;
+  document.getElementById('documentAvatar').innerHTML = char.isAvatarImg ? `<img src="${char.avatar}" style="width:100%; height:100%; object-fit:cover;">` : char.avatar || '👤';
+  
+  const cover = document.getElementById('charDocumentCover');
+  cover.style.height = (char.coverHeight || 140) + "px";
+  cover.style.backgroundImage = char.coverImg ? `url('${char.coverImg}')` : '';
+
+  // 스탯 차트 렌더 영역 제어
+  const chartBox = document.getElementById('characterRadarChartInteractiveCanvasBox');
+  if(char.useRadar) {
+    chartBox.style.display = "block";
+    drawCharacterRadarGraphicSvg(char.radarData);
+    document.getElementById('radarToggleControlTriggerBtn').textContent = "📊 스탯 차트 비활성화";
+  } else {
+    chartBox.style.display = "none";
+    document.getElementById('radarToggleControlTriggerBtn').textContent = "📊 스탯 차트 활성화";
+  }
+
+  const container = document.getElementById('dynamicSectionsContainer');
+  const tocContainer = document.getElementById('rightTocContainer');
+  container.innerHTML = ""; tocContainer.innerHTML = "";
+
+  char.sections.forEach((sec, sIdx) => {
+    const tocWrapper = document.createElement('div');
+    tocWrapper.className = "toc-link-wrapper";
+    tocWrapper.setAttribute('data-secid', sec.id);
+    tocWrapper.setAttribute('draggable', 'false');
+    tocWrapper.innerHTML = `
+      <span class="toc-drag-handle" title="드래그해서 순서 변경">⠿</span>
+      <span class="toc-link ${sIdx===0?'active':''}" id="tocLink-${sec.id}" onclick="scrollToSection('${sec.id}', this)">${sec.title}</span>
+      <span class="toc-edit-btn" id="tocEditIcon-${sec.id}" onclick="openEditTocModalPopup('${sec.id}', '${sec.title.replace(/'/g,"\\'")}')">✏️</span>
+      <span class="toc-del-btn" id="tocDelIcon-${sec.id}" onclick="deleteCustomSection('${sec.id}')">❌</span>`;
+    tocContainer.appendChild(tocWrapper);
+
+    const secDivider = document.createElement('div');
+    secDivider.className = "divider"; secDivider.id = sec.id; secDivider.textContent = sec.title;
+    container.appendChild(secDivider);
+
+    if(sec.type === 'image') {
+      const w = char.imageWidth || "300"; const h = char.imageHeight || "400";
+      const imgBoxWrapper = document.createElement('div');
+      imgBoxWrapper.className = "full-shot-wrapper";
+      imgBoxWrapper.style.textAlign = char.imageAlign || "center";
+      let innerBoxHtml = char.image 
+        ? `<img src="${char.image}" style="width:100%; height:100%; object-fit:cover;">` 
+        : `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:var(--muted2); gap:8px;">
+            <span style="font-size:40px">🖼️</span>
+            <span style="font-size:12px; font-weight:500;">전신 일러스트 / 이미지</span>
+            <span style="font-size:11px; opacity:0.7;">편집 모드에서 사진을 업로드하세요</span>
+           </div>`;
+      imgBoxWrapper.innerHTML = `
+        <div class="full-shot-box" id="innerFullShotBox" style="width:${w}px; height:${h}px; margin:${char.imageAlign==='center'?'0 auto':(char.imageAlign==='right'?'0 0 0 auto':'0')};">${innerBoxHtml}</div>
+        <div class="full-shot-control-panel" id="fullShotControlPanelBox">
+          <div style="display:flex; gap:6px">
+            <label class="btn" style="font-size:11px; padding:4px 8px">📸 파일 탐색기<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot(event)"></label>
+            <button class="btn" style="font-size:11px; padding:4px 8px; color:#dc2626" onclick="clearCharacterFullShotImg()">사진 제거</button>
+            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('left')">◀ 좌정렬</button>
+            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('center')">■ 중앙</button>
+            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('right')">▶ 우정렬</button>
+          </div>
+          <div class="slider-row"><span>가로</span><input type="range" min="150" max="600" value="${w}" oninput="resizeFullShotImg(this.value, 'w')"><b id="lblW">${w}px</b></div>
+          <div class="slider-row"><span>세로</span><input type="range" min="200" max="800" value="${h}" oninput="resizeFullShotImg(this.value, 'h')"><b id="lblH">${h}px</b></div>
+        </div>`;
+      container.appendChild(imgBoxWrapper);
+    } 
+    else if(sec.type === 'table') {
+      const tableWrap = document.createElement('div');
+      tableWrap.style.cssText = 'overflow:visible; position:relative;';
+      const table = document.createElement('table'); table.className = "info-table";
+      let tBody = "<tbody>";
+      sec.data.forEach((row, rIdx) => {
+        tBody += `<tr style="position:relative;">
+          <th class="wiki-editable-th-cell" data-secid="${sec.id}" data-index="${rIdx}" style="position:relative;">${row.k}</th>
+          <td class="wiki-editable-cell" data-secid="${sec.id}" data-index="${rIdx}">${row.v}</td>
+          <td class="row-control-btn-wrap" style="display:none; width:1%; white-space:nowrap; padding:4px 6px; background:var(--surface); border-left:1px solid var(--border);">
+             <button class="row-ctrl-badge add" onclick="insertNewTableRowInlineFromNode('${sec.id}', ${rIdx})">➕ 행</button>
+             <button class="row-ctrl-badge del" onclick="deleteTableRowInlineFromNode('${sec.id}', ${rIdx})">❌</button>
+          </td>
+        </tr>`;
+      });
+      tBody += "</tbody>";
+      table.innerHTML = tBody;
+      tableWrap.appendChild(table);
+
+      // 관계도 인터랙티브 캔버스 구역 결합
+      const relBlock = document.createElement('div');
+      relBlock.className = "rel-system-outer";
+      relBlock.innerHTML = `
+        <div class="rel-system-header">🔮 겹침 방지형 인터랙티브 인물 관계도 캔버스</div>
+        <div class="rel-toolbar" id="relToolbarWrapperContainer">
+          <button class="btn" onclick="addNewRelNodeOnCanvas()" style="color:var(--teal)">＋ 인물 원형 노드 추가</button>
+          <button class="btn" onclick="openIntegratedArrowLinkModal()" style="color:var(--accent)">⛓️ 관계 화살표 직접 연결</button>
+        </div>
+        <div class="rel-canvas-viewport ${globalSelectedFontClass}" id="relCanvasViewport"><svg class="rel-svg-layer" id="relSvgLayer"></svg></div>`;
+      container.appendChild(tableWrap);
+      container.appendChild(relBlock);
+      setTimeout(() => initInteractiveCanvasEngine(char.relationships), 40);
+    } 
+    else if(sec.type === 'text') {
+      const pBox = document.createElement('div');
+      pBox.className = "prose wiki-editable-block"; pBox.id = `editableBlock-${sec.id}`;
+      pBox.innerHTML = sec.data; container.appendChild(pBox);
+
+      // 마크다운 숏컷 실시간 단축키 타이핑 감지 리스너 바인딩
+      pBox.addEventListener('keyup', (e) => {
+        if(e.key === ' ' || e.key === 'Enter') { executeLiveMarkdownShortcutParser(pBox); }
+      });
+    }
+  });
+
+  let sHtml = '';
+  fol.characters.forEach(c => {
+    sHtml += `<div class="char-list-item ${c.name === currentCharacter?'active':''}" onclick="navigate('character','${currentCreator}','${currentFolder}','${c.name}')">
+      <div class="char-dot ${c.name === currentCharacter?'active':''}"></div>${c.name}
+    </div>`;
+  });
+  document.getElementById('sidebarCharList').innerHTML = sHtml;
+  
+  renderAutoFootnoteListViewArea();
+}
+
+function openIntegratedArrowLinkModal() {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const rel = char.relationships; if(rel.nodes.length < 2) return alert('최소 2명 이상의 인물 노드가 필요합니다.');
+  let fromOptions = rel.nodes.map(n => `<option value="${n.id}">${n.name}</option>`).join('');
+  
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">인물 관계 화살표 형성 에디터</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">출발지 인물</label><select id="modalEdgeFrom" class="form-select">${fromOptions}</select></div>
+      <div class="form-group"><label class="form-label">도착지 인물</label><select id="modalEdgeTo" class="form-select">${fromOptions}</select></div>
+      <div class="form-group"><label class="form-label">관계 내용 타이틀</label><input type="text" id="modalEdgeText" class="form-input" placeholder="예: 라이벌"></div>
+      <div class="form-group"><label class="form-label">화살표 선 색상</label><input type="color" id="modalEdgeCustomColorPicker" class="form-input" value="#6b4fd8" style="height:44px; padding:2px"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitIntegratedEdgeArrowLink()">연결 완료</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitIntegratedEdgeArrowLink() {
+  const from = document.getElementById('modalEdgeFrom').value; const to = document.getElementById('modalEdgeTo').value;
+  if(from === to) return alert('자기 자신에게 선을 그을 수 없습니다.');
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.relationships.edges.push({
+    from: from, to: to, text: document.getElementById('modalEdgeText').value.trim() || "관계",
+    color: document.getElementById('modalEdgeCustomColorPicker').value
+  });
+  closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
+}
+
+function insertNewTableRowInlineFromNode(secId, index) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const sec = char.sections.find(s => s.id === secId);
+  sec.data.splice(index + 1, 0, { k: "새 명세명", v: "내용 기입" });
+  renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+}
+function deleteTableRowInlineFromNode(secId, index) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const sec = char.sections.find(s => s.id === secId);
+  if(sec.data.length <= 1) return alert('명세는 최소 1개 이상 존재해야 합니다.');
+  sec.data.splice(index, 1);
+  renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+}
+
+function toggleCharacterEditMode() {
+  isCharacterEditMode = !isCharacterEditMode;
+  const btn = document.getElementById('globalCharacterEditBtn');
+  const toolbar = document.getElementById('wikiEditorToolbar');
+  const tocAddBtn = document.getElementById('tocAddBtn');
+  const sizePanel = document.getElementById('fullShotControlPanelBox');
+  const coverControl = document.getElementById('coverHeightControlPanel');
+  const relToolbar = document.getElementById('relToolbarWrapperContainer');
+  const radarPanel = document.getElementById('radarChartEditorPanelBoxUi');
+  
+  const blocks = document.querySelectorAll('.wiki-editable-block');
+  const cells = document.querySelectorAll('.wiki-editable-cell');
+  const thCells = document.querySelectorAll('.wiki-editable-th-cell');
+  const ctrlWraps = document.querySelectorAll('td.row-control-btn-wrap');
+
+  if(isCharacterEditMode) {
+    btn.textContent = '저장 완료'; btn.style.background = 'var(--teal)'; btn.style.borderColor = 'var(--teal)';
+    toolbar.style.display = 'flex'; tocAddBtn.style.display = 'block';
+    if(sizePanel) sizePanel.style.display = 'flex';
+    if(coverControl) coverControl.style.display = 'flex';
+    if(relToolbar) relToolbar.style.display = 'flex';
+    if(radarPanel) radarPanel.style.display = 'flex';
+    
+    blocks.forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
+    cells.forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
+    thCells.forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
+    ctrlWraps.forEach(w => w.style.display = 'table-cell');
+    document.querySelectorAll('.toc-drag-handle').forEach(h => { h.style.display = 'inline'; });
+    document.querySelectorAll('.toc-link-wrapper').forEach(w => { w.setAttribute('draggable','true'); setupTocDragEvents(w); });
+    
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).sections.forEach(sec => {
+      const iconD = document.getElementById(`tocDelIcon-${sec.id}`); if(iconD) iconD.style.display = 'inline';
+      const iconE = document.getElementById(`tocEditIcon-${sec.id}`); if(iconE) iconE.style.display = 'inline';
+    });
+    document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'flex');
+    document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'flex');
+  } else {
+    btn.textContent = '편집 하기'; btn.style.background = ''; btn.style.borderColor = '';
+    toolbar.style.display = 'none'; tocAddBtn.style.display = 'none';
+    if(sizePanel) sizePanel.style.display = 'none';
+    if(coverControl) coverControl.style.display = 'none';
+    if(relToolbar) relToolbar.style.display = 'none';
+    if(radarPanel) radarPanel.style.display = 'none';
+    
+    blocks.forEach(b => { b.setAttribute('contenteditable','false'); b.classList.remove('edit-active'); });
+    cells.forEach(c => { c.setAttribute('contenteditable','false'); c.classList.remove('edit-active'); });
+    thCells.forEach(th => { th.setAttribute('contenteditable','false'); th.classList.remove('edit-active'); });
+    ctrlWraps.forEach(w => w.style.display = 'none');
+    document.querySelectorAll('.toc-drag-handle').forEach(h => { h.style.display = 'none'; });
+    document.querySelectorAll('.toc-link-wrapper').forEach(w => w.setAttribute('draggable','false'));
+
+    const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+    char.sections.forEach(sec => {
+      if(sec.type === 'text') {
+        const node = document.getElementById(`editableBlock-${sec.id}`); if(node) sec.data = node.innerHTML;
+      }
+      else if(sec.type === 'table') {
+        const targetThs = document.querySelectorAll(`.wiki-editable-th-cell[data-secid="${sec.id}"]`);
+        const targetTds = document.querySelectorAll(`.wiki-editable-cell[data-secid="${sec.id}"]`);
+        let nextArray = [];
+        targetThs.forEach((th, idx) => { nextArray.push({ k: th.innerHTML, v: targetTds[idx].innerHTML }); });
+        sec.data = nextArray;
+      }
+    });
+    document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'none');
+    document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'none');
+
+    renderCharacterDocument();
+  }
+}
+
+function handleHeaderIdentityClick() {
+  if(!isCharacterEditMode) return alert("[편집 하기] 활성화 시 이름 변경 가능합니다.");
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">캐릭터 고유명 변경</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">캐릭터 고유 명칭</label><input type="text" id="editCharDocName" class="form-input" value="${char.name}"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitCharacterIdentityEdit()">수정 완료</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitCharacterIdentityEdit() {
+  const nextName = document.getElementById('editCharDocName').value.trim(); if(!nextName) return;
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.name = nextName; currentCharacter = nextName; closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+}
+
+function openNewTocModalPopup() {
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">목차 세션 항목 신설</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">목차 타이틀</label><input type="text" id="modalNewTocTitle" class="form-input" placeholder="예: 4. 상세 성격"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitAddNewTocFromModal()">목차 추가 확정</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitAddNewTocFromModal() {
+  const title = document.getElementById('modalNewTocTitle').value.trim(); if(!title) return;
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.sections.push({ id: "sec-" + Date.now(), title: title, type: "text", data: "이곳에 설정을 기술하세요." });
+  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+}
+function openEditTocModalPopup(secId, currentTitle) {
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">목차 이름 수정</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">목차 타이틀 수정</label><input type="text" id="modalEditTocTitle" class="form-input" value="${currentTitle}"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitEditTocFromModal('${secId}')">변경 적용</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitEditTocFromModal(secId) {
+  const nextTitle = document.getElementById('modalEditTocTitle').value.trim(); if(!nextTitle) return;
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const sec = char.sections.find(s => s.id === secId); if(sec) sec.title = nextTitle;
+  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+}
+function deleteCustomSection(secId) {
+  if(secId==='sec-0' || secId==='sec-1') return alert('기본 명세 축은 삭제할 수 없습니다.');
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.sections = char.sections.filter(s => s.id !== secId);
+  renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+}
+
+function openInlineImageInsertModal() {
+  saveSelectionCacheRange();
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">본문 사진 인라인 삽입</div>
+    <div class="modal-body-form">
+      <div class="form-group"><input type="file" id="modalInlineImgFile" accept="image/*" class="form-input"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitInlineImageInsert()">본문 삽입</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+}
+function submitInlineImageInsert() {
+  const file = document.getElementById('modalInlineImgFile').files[0]; if(!file) return;
+  const reader = new FileReader(); reader.onload = function(e) {
+    const uniqueId = "img-" + Date.now();
+    const htmlSnippet = `<div style="text-align: center;" id="wrap-${uniqueId}"><img src="${e.target.result}" style="width: 260px; border-radius:8px; margin:8px 0;"><br><button style="font-size:11px; color:#dc2626; cursor:pointer;" onclick="document.getElementById('wrap-${uniqueId}').remove()">[이미지 삭제]</button></div><p><br></p>`;
+    closeGlobalModal();
+    const sel = window.getSelection();
+    if(savedSelectionRange) {
+       sel.removeAllRanges(); sel.addRange(savedSelectionRange);
+       document.execCommand('insertHTML', false, htmlSnippet);
+    }
+  }; reader.readAsDataURL(file);
+}
+
+function resizeCharacterBannerCover(val) {
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).coverHeight = val;
+  document.getElementById('charDocumentCover').style.height = val + "px";
+}
+function uploadCharacterCoverImg(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader(); reader.onload = function(evt) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).coverImg = evt.target.result;
+    document.getElementById('charDocumentCover').style.backgroundImage = `url('${evt.target.result}')`;
+  }; reader.readAsDataURL(file);
+}
+function uploadCharacterFullShot(event) {
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader(); reader.onload = function(e) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = e.target.result;
+    document.getElementById('innerFullShotBox').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+  }; reader.readAsDataURL(file);
+}
+function clearCharacterFullShotImg() {
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = "";
+  document.getElementById('innerFullShotBox').innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:var(--muted2); gap:8px;"><span style="font-size:40px">🖼️</span><span style="font-size:12px; font-weight:500;">전신 일러스트 / 이미지</span><span style="font-size:11px; opacity:0.7;">편집 모드에서 사진을 업로드하세요</span></div>`;
+}
+function changeCharacterFullShotAlign(dir) {
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).imageAlign = dir;
+  document.getElementById('innerFullShotBox').style.margin = dir === 'center' ? '0 auto' : (dir === 'right' ? '0 0 0 auto' : '0');
+}
+function resizeFullShotImg(val, type) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const targetBox = document.getElementById('innerFullShotBox');
+  if(type === 'w') { char.imageWidth = val; targetBox.style.width = val + "px"; document.getElementById('lblW').textContent = val + "px"; } 
+  else { char.imageHeight = val; targetBox.style.height = val + "px"; document.getElementById('lblH').textContent = val + "px"; }
+}
+
+function deleteCurrentCharacter() {
+  if(!confirm("이 문서 카드를 완전히 파쇄합니까?")) return;
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.filter(c => c.name !== currentCharacter);
+  navigate('folder', currentCreator, currentFolder);
+}
+function scrollToSection(id, element) {
+  const target = document.getElementById(id); if(target) target.scrollIntoView({ behavior: 'smooth' });
+  document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active')); element.classList.add('active');
+}
+function handleBack() { if (navigationHistory.length > 0) { const prev = navigationHistory.pop(); navigate(prev.view, prev.creator, prev.folder, prev.character, true); } }
+function closeGlobalModal() { document.getElementById('globalModalOverlay').style.display = "none"; }
+
+/* ==================== 각주 팝업 툴팁 엔진 ==================== */
+(function setupFootnoteTooltip() {
+  const tip = document.createElement('div');
+  tip.id = 'footnoteTooltipPopup';
+  document.body.appendChild(tip);
+
+  document.addEventListener('mouseover', function(e) {
+    const ref = e.target.closest('.wiki-footnote-ref');
+    if(!ref) return;
+    const txt = ref.getAttribute('data-tip');
+    const num = ref.getAttribute('data-num');
+    if(!txt) return;
+    tip.innerHTML = `<span style="color:var(--accent);font-weight:bold;">[${num}]</span> ${txt}`;
+    tip.style.display = 'block';
+  });
+  document.addEventListener('mousemove', function(e) {
+    if(tip.style.display === 'block') {
+      let x = e.clientX + 14, y = e.clientY - 36;
+      if(x + 310 > window.innerWidth) x = e.clientX - 320;
+      if(y < 8) y = e.clientY + 16;
+      tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    }
+  });
+  document.addEventListener('mouseout', function(e) {
+    if(e.target.closest('.wiki-footnote-ref')) tip.style.display = 'none';
+  });
+  document.addEventListener('click', function(e) {
+    const ref = e.target.closest('.wiki-footnote-ref');
+    if(!ref) return;
+    const num = ref.getAttribute('data-num');
+    const target = document.getElementById(`fn-link-${num}`);
+    if(target) { target.scrollIntoView({behavior:'smooth', block:'center'}); }
+  });
+})();
+
+/* ==================== 목차 드래그 재정렬 엔진 ==================== */
+let tocDragSrcId = null;
+
+function setupTocDragEvents(wrapper) {
+  wrapper.addEventListener('dragstart', function(e) {
+    tocDragSrcId = wrapper.getAttribute('data-secid');
+    wrapper.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  wrapper.addEventListener('dragend', function() {
+    document.querySelectorAll('.toc-link-wrapper').forEach(w => {
+      w.classList.remove('dragging'); w.classList.remove('drag-over');
+    });
+  });
+  wrapper.addEventListener('dragover', function(e) {
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.toc-link-wrapper').forEach(w => w.classList.remove('drag-over'));
+    wrapper.classList.add('drag-over');
+  });
+  wrapper.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const destId = wrapper.getAttribute('data-secid');
+    if(!tocDragSrcId || tocDragSrcId === destId) return;
+    const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+    const srcIdx = char.sections.findIndex(s => s.id === tocDragSrcId);
+    const dstIdx = char.sections.findIndex(s => s.id === destId);
+    if(srcIdx < 0 || dstIdx < 0) return;
+    const [moved] = char.sections.splice(srcIdx, 1);
+    char.sections.splice(dstIdx, 0, moved);
+    renderCharacterDocument();
+    isCharacterEditMode = false; toggleCharacterEditMode();
+  });
+}
+</script>
+</body>
+</html>
