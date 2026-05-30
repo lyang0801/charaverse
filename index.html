@@ -586,6 +586,8 @@ function submitNewCreator() {
 
 function renderCreatorProfilePage() {
   const target = charaverseDatabase[currentCreator];
+  if (!target) return;
+  if (!target.folders) target.folders = [];
   document.getElementById('creatorViewName').textContent = currentCreator;
   const bioEl = document.getElementById('creatorViewBio');
   bioEl.innerHTML = (target.bio || "설정된 소개글이 없습니다.").replace(/\n/g, '<br>');
@@ -666,6 +668,8 @@ function submitAddNewFolder() {
 
 function renderFolderContentPage() {
   const fData = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
+  if (!fData) return;
+  if (!fData.characters) fData.characters = [];
   document.getElementById('folderViewTitle').textContent = `📁 ${fData.name}`;
   document.getElementById('folderWorldTitleDisplay').textContent = fData.worldTitle || fData.name;
   document.getElementById('folderWorldSubtitleDisplay').textContent = fData.worldSubtitle || fData.desc || "";
@@ -756,7 +760,10 @@ function openCharacterAddModal() {
 }
 function submitAddNewCharacter() {
   const name = document.getElementById('newCharName').value.trim(); if(!name) return alert("이름을 입력하세요.");
-  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.push({
+  const folder = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
+  if (!folder.characters) folder.characters = [];
+  folder.characters.push({
+  folder.characters.push({
     name: name, avatar: document.getElementById('newCharAvatar').value.trim() || "👤", isAvatarImg: false, coverImg: "", coverHeight: "140",
     image: "", imageWidth: "300", imageHeight: "400", imageAlign: "center", useRadar: false,
     radarData: { "근력": 50, "민첩": 50, "마력": 50, "지력": 50, "생존력": 50, "잠재력": 50 },
