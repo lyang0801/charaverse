@@ -556,7 +556,12 @@ function renderCircleCreatorGrid() {
         <div class="circle-avatar-wrapper">${avatarHtml}</div>
         <div class="circle-creator-name">${name}</div>
       </div>
-      <div onclick="deleteCreator('${name}')" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:bold;z-index:10;">✕</div>
+      <div style="position:absolute;top:0;right:-8px;">
+        <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:22px;height:22px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--muted);">⋮</div>
+        <div style="display:none;position:absolute;right:0;top:26px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:100px;overflow:hidden;">
+          <div onclick="deleteCreator('${name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
+        </div>
+      </div>
     </div>`;
   });
   document.getElementById('mainCircleCreatorGrid').innerHTML = gridHtml || '<div class="empty-placeholder-box">등록된 창작 멤버가 없습니다.</div>';
@@ -576,7 +581,7 @@ function openNewCreatorFormPopup() {
 function submitNewCreator() {
   const name = document.getElementById('addCrName').value.trim(); if(!name) return alert('명칭을 기입해주세요.');
   charaverseDatabase[name] = { bio: document.getElementById('addCrBio').value.trim() || "CHARAVERSE 창작 멤버", avatar: "", banner: "", folders: [] };
-  closeGlobalModal(); renderCircleCreatorGrid(); saveToFirebase();
+  closeGlobalModal(); saveToFirebase(); navigate('creator', name);
 }
 
 function renderCreatorProfilePage() {
@@ -594,7 +599,12 @@ function renderCreatorProfilePage() {
       <div onclick="navigate('folder', '${currentCreator}', '${f.name}')">
         <div class="folder-card-title">📁 ${f.name}</div><div class="folder-card-desc">${f.desc}</div>
       </div>
-      <div onclick="deleteFolder('${f.name}')" style="position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:bold;">✕</div>
+      <div style="position:absolute;top:10px;right:10px;">
+        <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--muted);">⋮</div>
+        <div style="display:none;position:absolute;right:0;top:30px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:100px;overflow:hidden;">
+          <div onclick="deleteFolder('${f.name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
+        </div>
+      </div>
     </div>`;
   });
   document.getElementById('folderGridContainer').innerHTML = fHtml || '<div class="empty-placeholder-box">생성된 폴더 카테고리가 없습니다.</div>';
@@ -651,7 +661,7 @@ function submitAddNewFolder() {
     worldTitle: name, worldSubtitle: document.getElementById('newFolderDesc').value.trim(),
     worldSetting: "해당 장르 및 세계관의 핵심 설정 규칙이나 스토리를 기입해 보세요.", characters: [] 
   });
-  closeGlobalModal(); renderCreatorProfilePage(); saveToFirebase();
+  closeGlobalModal(); saveToFirebase(); navigate('folder', currentCreator, name);
 }
 
 function renderFolderContentPage() {
@@ -672,8 +682,16 @@ function renderFolderContentPage() {
   let cHtml = '<div class="char-card-grid">';
   fData.characters.forEach(c => {
     let symHtml = c.isAvatarImg && c.avatar ? `<img src="${c.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<span class="char-card-symbol-txt">${c.avatar || '👤'}</span>`;
-    cHtml += `<div class="char-card" onclick="navigate('character', '${currentCreator}', '${currentFolder}', '${c.name}')">
-      <div class="char-card-thumb">${symHtml}</div><div class="char-card-body"><div class="char-card-name">${c.name}</div></div>
+    cHtml += `<div class="char-card" style="position:relative;">
+      <div onclick="navigate('character', '${currentCreator}', '${currentFolder}', '${c.name}')">
+        <div class="char-card-thumb">${symHtml}</div><div class="char-card-body"><div class="char-card-name">${c.name}</div></div>
+      </div>
+      <div style="position:absolute;top:8px;right:8px;">
+        <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,0.85);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--muted);">⋮</div>
+        <div style="display:none;position:absolute;right:0;top:28px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:100px;overflow:hidden;">
+          <div onclick="deleteCharacterCard('${c.name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
+        </div>
+      </div>
     </div>`;
   });
   container.innerHTML = cHtml + '</div>';
@@ -1571,6 +1589,14 @@ function resizeFullShotImg(val, type) {
   const targetBox = document.getElementById('innerFullShotBox');
   if(type === 'w') { char.imageWidth = val; targetBox.style.width = val + "px"; document.getElementById('lblW').textContent = val + "px"; } 
   else { char.imageHeight = val; targetBox.style.height = val + "px"; document.getElementById('lblH').textContent = val + "px"; }
+}
+
+function deleteCharacterCard(charName) {
+  if(!confirm(`'${charName}' 캐릭터를 삭제할까요?`)) return;
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters = 
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.filter(c => c.name !== charName);
+  saveToFirebase();
+  renderFolderContentPage();
 }
 
 function deleteCurrentCharacter() {
