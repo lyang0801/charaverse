@@ -953,6 +953,10 @@ function handleToolbarMouseDown(e) {
 
 function executeWikiFootnoteSystemStamp() {
   // selection은 mousedown에서 이미 저장됨 (툴바 버튼 mousedown 핸들러)
+  saveSelectionCacheRange(); // 혹시 누락된 경우를 대비해 한 번 더 저장
+  // 현재 포커스된 편집 블록 ID를 별도로 기억 (모달 열리면 blur되므로)
+  const activeBlock = document.querySelector('.wiki-editable-block.edit-active');
+  window._savedActiveBlockId = activeBlock ? activeBlock.id : null;
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
     <div class="modal-title">📌 각주 내용 입력</div>
@@ -996,7 +1000,9 @@ function submitWikiFootnoteInsertStamp() {
     } catch(e) { inserted = false; }
   }
   if (!inserted) {
-    const fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.edit-active');
+    const fallback = (window._savedActiveBlockId && document.getElementById(window._savedActiveBlockId))
+      || document.querySelector('.wiki-editable-block.edit-active')
+      || document.querySelector('.edit-active');
     if(fallback) { fallback.focus(); fallback.appendChild(node); inserted = true; }
   }
   
@@ -1132,6 +1138,7 @@ function unveilSpoilerContainerDirect(blindElement) {
 function toggleRadarChartBuildVisiblity() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.useRadar = !char.useRadar;
+  saveToFirebase(); // useRadar 상태 즉시 저장 (누락 시 Firebase 재수신으로 덮어씌워짐)
   renderCharacterDocument();
   if(isCharacterEditMode) {
      isCharacterEditMode = false; toggleCharacterEditMode(); // 상태 토글 동기화 유지
