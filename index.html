@@ -587,6 +587,7 @@ firebase.initializeApp({
 });
 var _dbRef = firebase.database().ref('charaverse');
 var _lastSaveTime = 0;
+var _relDragging = false; // 관계도 드래그 중 Firebase 수신 차단용
 _dbRef.on('value', function(snapshot) {
   var data = snapshot.val();
   if (data) { charaverseDatabase = data; }
@@ -597,11 +598,12 @@ _dbRef.on('value', function(snapshot) {
     updateNavbar();
     return;
   }
-  // 내가 저장한 직후 500ms 이내면 리렌더 생략 (깜박임 방지)
+  // 내가 저장한 직후 1500ms 이내면 리렌더 생략 (관계도 위치 초기화 방지)
   var now = Date.now();
-  if (now - _lastSaveTime < 500) return;
-  // 편집 모드 중에는 데이터만 갱신 (입력 방해 방지)
+  if (now - _lastSaveTime < 1500) return;
+  // 편집 모드 중이거나 관계도 드래그 중에는 리렌더 금지
   if (isCharacterEditMode) return;
+  if (_relDragging) return;
   if (currentView === 'main') renderCircleCreatorGrid();
   else if (currentView === 'creator') renderCreatorProfilePage();
   else if (currentView === 'folder') renderFolderContentPage();
@@ -1412,19 +1414,32 @@ function drawRelationshipArrowsSvg(rel) {
 
 function setupDragAndDropEvents(handle, el, nodeData, rel) {
   let isDragging = false; let startX, startY;
-  handle.addEventListener('mousedown', (e) => {
-    e.stopPropagation(); e.preventDefault(); isDragging = true;
-    startX = e.clientX - nodeData.x; startY = e.clientY - nodeData.y;
-  });
-  document.addEventListener('mousemove', (e) => {
+  // mousemove/mouseup은 handle 단위로 등록해 document 누적 방지
+  function onMouseMove(e) {
     if(!isDragging) return;
     let nextX = e.clientX - startX; let nextY = e.clientY - startY;
     nextX = Math.max(0, Math.min(nextX, 750)); nextY = Math.max(0, Math.min(nextY, 380));
     nodeData.x = nextX; nodeData.y = nextY;
     el.style.left = nextX + "px"; el.style.top = nextY + "px";
     drawRelationshipArrowsSvg(rel);
+  }
+  function onMouseUp() {
+    if(isDragging) {
+      isDragging = false;
+      _lastSaveTime = Date.now();
+      _dbRef.set(charaverseDatabase);
+      // 저장 완료 후 1500ms 뒤에 드래그 플래그 해제
+      setTimeout(() => { _relDragging = false; }, 1500);
+    } else { isDragging = false; _relDragging = false; }
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+  handle.addEventListener('mousedown', (e) => {
+    e.stopPropagation(); e.preventDefault(); isDragging = true; _relDragging = true;
+    startX = e.clientX - nodeData.x; startY = e.clientY - nodeData.y;
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   });
-  document.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; saveToFirebase(); } else { isDragging = false; } });
 }
 
 function updateCanvasNodeNameInline(id, element) {
@@ -1727,6 +1742,8 @@ function toggleCharacterEditMode() {
     document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'none');
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'none');
 
+    // 관계도 노드 위치는 이미 nodeData 참조로 업데이트되어 있으므로
+    // renderCharacterDocument 대신 관계도만 재그리기 (위치 초기화 방지)
     renderCharacterDocument(); saveCreatorToFirebase(currentCreator);
   }
 }
