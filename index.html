@@ -1425,6 +1425,7 @@ function setupDragAndDropEvents(handle, el, nodeData, rel) {
 
 function updateCanvasNodeNameInline(id, element) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!char.relationships || !char.relationships.nodes) return;
   const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.name = element.textContent.trim();
   drawRelationshipArrowsSvg(char.relationships);
   saveToFirebase();
@@ -1441,6 +1442,9 @@ function uploadCanvasNodeImgInline(e, id) {
 }
 function addNewRelNodeOnCanvas() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!char.relationships) char.relationships = { nodes: [], edges: [] };
+  if(!char.relationships.nodes) char.relationships.nodes = [];
+  if(!char.relationships.edges) char.relationships.edges = [];
   char.relationships.nodes.push({ id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" });
   saveToFirebase();
   initInteractiveCanvasEngine(char.relationships);
@@ -1560,6 +1564,7 @@ function renderCharacterDocument() {
         <div class="rel-canvas-viewport ${globalSelectedFontClass}" id="relCanvasViewport"><svg class="rel-svg-layer" id="relSvgLayer"></svg></div>`;
       container.appendChild(tableWrap);
       container.appendChild(relBlock);
+      if(!char.relationships) char.relationships = { nodes: [], edges: [] };
       setTimeout(() => initInteractiveCanvasEngine(char.relationships), 40);
     } 
     else if(sec.type === 'text') {
