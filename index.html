@@ -457,7 +457,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           </div>
         </div>
 
-        <div class="editor-toolbar" id="wikiEditorToolbar">
+        <div class="editor-toolbar" id="wikiEditorToolbar" onmousedown="handleToolbarMouseDown(event)">
           <button style="font-weight:bold" onclick="document.execCommand('bold', false, null)">B</button>
           <button style="font-style:italic" onclick="document.execCommand('italic', false, null)">I</button>
           <button style="text-decoration:underline" onclick="document.execCommand('underline', false, null)">U</button>
@@ -943,24 +943,36 @@ function saveSelectionCacheRange() {
   if (sel.rangeCount > 0) { savedSelectionRange = sel.getRangeAt(0).cloneRange(); }
 }
 
-function executeWikiFootnoteSystemStamp() {
-  // 모달을 쓰면 포커스 이동으로 selection이 날아가므로 prompt() 사용
-  const sel = window.getSelection();
-  if (sel && sel.rangeCount > 0) {
-    savedSelectionRange = sel.getRangeAt(0).cloneRange();
-  }
-  const txt = prompt('각주 내용을 입력하세요 (나무위키 스타일):');
-  if (!txt || !txt.trim()) return;
-  submitWikiFootnoteInsertStamp(txt.trim());
+// 툴바 클릭 시 contenteditable 포커스/selection이 날아가지 않도록 mousedown에서 방지
+function handleToolbarMouseDown(e) {
+  // select 요소는 preventDefault하면 드롭다운이 안 열리므로 제외
+  if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+  e.preventDefault(); // 포커스 이탈 방지
+  saveSelectionCacheRange(); // 이 시점의 selection 저장
 }
 
-function submitWikiFootnoteInsertStamp(txt) {
+function executeWikiFootnoteSystemStamp() {
+  // selection은 mousedown에서 이미 저장됨 (툴바 버튼 mousedown 핸들러)
+  const modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = `
+    <div class="modal-title">📌 각주 내용 입력</div>
+    <div class="modal-body-form">
+      <div class="form-group"><label class="form-label">각주 상세 내용 (나무위키 스타일)</label><input type="text" id="modalFootnoteInputText" class="form-input" placeholder="상세 설명을 적어주세요." autofocus></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitWikiFootnoteInsertStamp()">각주 삽입</button></div>`;
+  document.getElementById('globalModalOverlay').style.display = "flex";
+  setTimeout(() => { const el = document.getElementById('modalFootnoteInputText'); if(el) el.focus(); }, 50);
+}
+
+function submitWikiFootnoteInsertStamp() {
+  const txt = document.getElementById('modalFootnoteInputText').value.trim(); if(!txt) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   
   const nextNum = char.footnotes.length + 1;
   char.footnotes.push({ id: `fn-${nextNum}`, text: txt });
 
-  // 각주 참조 노드 생성
+  closeGlobalModal();
+
   const node = document.createElement('a');
   node.className = "wiki-footnote-ref";
   node.id = `fn-ref-${nextNum}`;
@@ -1421,6 +1433,11 @@ function addNewRelNodeOnCanvas() {
   char.relationships.nodes.push({ id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" });
   saveToFirebase();
   initInteractiveCanvasEngine(char.relationships);
+  // 편집모드 중이면 새 노드의 핸들/삭제버튼도 보이게
+  if(isCharacterEditMode) {
+    document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'flex');
+    document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'flex');
+  }
 }
 function deleteCanvasNodeEntity(e, id) {
   e.stopPropagation();
@@ -1632,7 +1649,9 @@ function toggleCharacterEditMode() {
     toolbar.style.display = 'flex'; tocAddBtn.style.display = 'block';
     if(sizePanel) sizePanel.style.display = 'flex';
     if(coverControl) coverControl.style.display = 'flex';
-    if(relToolbar) relToolbar.style.display = 'flex';
+    // relToolbar는 renderCharacterDocument가 재실행될 때 새로 생성되므로 매번 다시 조회
+    const relToolbarNow = document.getElementById('relToolbarWrapperContainer');
+    if(relToolbarNow) relToolbarNow.style.display = 'flex';
     if(radarPanel) radarPanel.style.display = 'flex';
     
     blocks.forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
