@@ -585,6 +585,7 @@ function navigate(view, creator = '', folder = '', character = '', isBackAction 
 
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.getElementById('globalCharacterEditBtn').style.display = (view === 'character') ? 'block' : 'none';
+  document.getElementById('globalPhoneBtn').style.display = (view === 'character') ? 'flex' : 'none';
 
   const bc = document.getElementById('breadcrumbContainer');
   let html = `<span class="link" onclick="clearToMain()">CHARAVERSE</span>`;
