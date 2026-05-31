@@ -587,23 +587,25 @@ firebase.initializeApp({
 });
 var _dbRef = firebase.database().ref('charaverse');
 var _lastSaveTime = 0;
-var _relDragging = false; // 관계도 드래그 중 Firebase 수신 차단용
+var _relDragging = false;
 _dbRef.on('value', function(snapshot) {
   var data = snapshot.val();
-  if (data) { charaverseDatabase = data; }
-  else { _dbRef.set(charaverseDatabase); }
   if (!window._fbReady) {
+    // 최초 로드 시에만 무조건 덮어쓰기
+    if (data) { charaverseDatabase = data; }
+    else { _dbRef.set(charaverseDatabase); }
     window._fbReady = true;
     renderCircleCreatorGrid();
     updateNavbar();
     return;
   }
-  // 내가 저장한 직후 1500ms 이내면 리렌더 생략 (관계도 위치 초기화 방지)
+  // 내가 저장한 직후 2000ms 이내면 Firebase 수신 데이터로 덮어쓰기 완전 차단
   var now = Date.now();
-  if (now - _lastSaveTime < 1500) return;
-  // 편집 모드 중이거나 관계도 드래그 중에는 리렌더 금지
-  if (isCharacterEditMode) return;
-  if (_relDragging) return;
+  if (now - _lastSaveTime < 2000) return;
+  // 편집 모드 중이거나 드래그 중에는 데이터/렌더 모두 차단
+  if (isCharacterEditMode || _relDragging) return;
+  // 그 외 경우만 데이터 갱신 + 렌더
+  if (data) { charaverseDatabase = data; }
   if (currentView === 'main') renderCircleCreatorGrid();
   else if (currentView === 'creator') renderCreatorProfilePage();
   else if (currentView === 'folder') renderFolderContentPage();
@@ -1464,14 +1466,32 @@ function addNewRelNodeOnCanvas() {
   if(!char.relationships) char.relationships = { nodes: [], edges: [] };
   if(!char.relationships.nodes) char.relationships.nodes = [];
   if(!char.relationships.edges) char.relationships.edges = [];
-  char.relationships.nodes.push({ id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" });
+
+  // 기존 노드들 위치를 DOM에서 먼저 동기화 (기존 위치 보존)
+  char.relationships.nodes.forEach(nd => {
+    const el = document.getElementById('nodeEl-' + nd.id);
+    if(el) { nd.x = parseInt(el.style.left) || nd.x; nd.y = parseInt(el.style.top) || nd.y; }
+  });
+
+  const nd = { id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" };
+  char.relationships.nodes.push(nd);
   saveToFirebase();
-  initInteractiveCanvasEngine(char.relationships);
-  // 편집모드 중이면 새 노드의 핸들/삭제버튼도 보이게
-  if(isCharacterEditMode) {
-    document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'flex');
-    document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'flex');
-  }
+
+  // 새 노드만 DOM에 추가 (전체 재렌더 금지)
+  const viewport = document.getElementById('relCanvasViewport'); if(!viewport) return;
+  const nodeEl = document.createElement('div');
+  nodeEl.className = "rel-node-circle"; nodeEl.id = `nodeEl-${nd.id}`;
+  nodeEl.style.left = nd.x + "px"; nodeEl.style.top = nd.y + "px";
+  nodeEl.innerHTML = `
+    <button class="rel-node-x-btn" style="display:flex" onclick="deleteCanvasNodeEntity(event, '${nd.id}')">X</button>
+    <div class="rel-node-avatar-slot" onclick="triggerCanvasNodeImgUpload('${nd.id}')">👤</div>
+    <div class="rel-node-text-label" contenteditable="true" onblur="updateCanvasNodeNameInline('${nd.id}', this)">${nd.name}</div>
+    <div class="rel-node-drag-handle" id="handle-${nd.id}" style="display:flex">✛</div>
+    <input type="file" id="fileNode-${nd.id}" accept="image/*" style="display:none" onchange="uploadCanvasNodeImgInline(event, '${nd.id}')">`;
+  viewport.appendChild(nodeEl);
+  const handleEl = nodeEl.querySelector('.rel-node-drag-handle');
+  setupDragAndDropEvents(handleEl, nodeEl, nd, char.relationships);
+  drawRelationshipArrowsSvg(char.relationships);
 }
 function deleteCanvasNodeEntity(e, id) {
   e.stopPropagation();
@@ -1587,7 +1607,13 @@ function renderCharacterDocument() {
       container.appendChild(tableWrap);
       container.appendChild(relBlock);
       if(!char.relationships) char.relationships = { nodes: [], edges: [] };
-      setTimeout(() => initInteractiveCanvasEngine(char.relationships), 40);
+      // 저장 직후 renderCharacterDocument 호출 시엔 관계도 재초기화 건너뜀 (위치 보존)
+      if(!window._skipRelInit) {
+        setTimeout(() => initInteractiveCanvasEngine(char.relationships), 40);
+      } else {
+        // 관계도 컨테이너만 만들어두고 현재 메모리 데이터로 초기화
+        setTimeout(() => { window._skipRelInit = false; initInteractiveCanvasEngine(char.relationships); }, 40);
+      }
     } 
     else if(sec.type === 'text') {
       const pBox = document.createElement('div');
@@ -1742,8 +1768,7 @@ function toggleCharacterEditMode() {
         const nodeEl = document.getElementById('nodeEl-' + nd.id);
         if(nodeEl) { nd.x = parseInt(nodeEl.style.left) || nd.x; nd.y = parseInt(nodeEl.style.top) || nd.y; }
       });
-    }
-    char.sections.forEach(sec => {
+    }    char.sections.forEach(sec => {
       if(sec.type === 'text') {
         const node = document.getElementById(`editableBlock-${sec.id}`); if(node) sec.data = node.innerHTML;
       }
@@ -1758,9 +1783,16 @@ function toggleCharacterEditMode() {
     document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'none');
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'none');
 
-    // 관계도 노드 위치는 이미 nodeData 참조로 업데이트되어 있으므로
-    // renderCharacterDocument 대신 관계도만 재그리기 (위치 초기화 방지)
-    renderCharacterDocument(); saveCreatorToFirebase(currentCreator);
+    // 먼저 저장하고, renderCharacterDocument는 관계도 캔버스를 건드리지 않도록
+    // 관계도 노드 contenteditable을 false로만 바꾸고 캔버스 재렌더는 하지 않음
+    const viewport = document.getElementById('relCanvasViewport');
+    if(viewport) {
+      viewport.querySelectorAll('.rel-node-text-label').forEach(el => el.setAttribute('contenteditable','false'));
+    }
+    saveCreatorToFirebase(currentCreator);
+    // renderCharacterDocument 호출 시 관계도 재초기화 건너뜀 (위치 보존)
+    window._skipRelInit = true;
+    renderCharacterDocument();
   }
 }
 
