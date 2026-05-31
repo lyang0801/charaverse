@@ -1669,14 +1669,36 @@ function renderCharacterDocument() {
 
 function injectSpoilerCtrlBars() {
   document.querySelectorAll('.spoiler-container').forEach(container => {
-    if(container.querySelector('.spoiler-ctrl-bar')) return; // 이미 있으면 스킵
+    if(container.querySelector('.spoiler-ctrl-bar')) return;
+    const isUnveiled = container.classList.contains('unveiled') || !container.querySelector('.spoiler-blind');
     const bar = document.createElement('div');
     bar.className = 'spoiler-ctrl-bar';
-    bar.style.display = 'none';
+    bar.style.display = isUnveiled ? 'flex' : 'none';
     bar.innerHTML = `
       <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
-      <button class="spoiler-ctrl-btn del" onclick="deleteSpoilerContainer(this)">🗑 블록 삭제</button>`;
+      <button class="spoiler-ctrl-btn del" onclick="deleteSpoilerContainer(this)" style="display:${isCharacterEditMode?'inline-block':'none'}">🗑 블록 삭제</button>`;
     container.insertBefore(bar, container.firstChild);
+
+    // 가림막이 아예 없는 경우(이미 remove()로 삭제된 구버전 데이터) 가림막 복원
+    if(!container.querySelector('.spoiler-blind')) {
+      const blind = document.createElement('div');
+      blind.className = 'spoiler-blind';
+      blind.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#2d2327,#4a353d);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;z-index:20;';
+      blind.innerHTML = `<span style="font-weight:bold;font-size:13px;color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span><span style="font-size:11px;opacity:0.8;">클릭 시 가림막이 해제됩니다.</span>`;
+      blind.onclick = function(){ unveilSpoilerContainerDirect(blind); };
+      container.appendChild(blind);
+    }
+
+    // 가림막이 있지만 아직 unveiled 아닌 경우 클릭 시 컨트롤 바 표시 연결
+    const blind = container.querySelector('.spoiler-blind');
+    if(blind && !blind._ctrlBound) {
+      blind._ctrlBound = true;
+      const origOnclick = blind.onclick;
+      blind.onclick = function(e) {
+        if(origOnclick) origOnclick.call(this, e);
+        else unveilSpoilerContainerDirect(blind);
+      };
+    }
   });
 }
 
