@@ -1330,6 +1330,9 @@ function initInteractiveCanvasEngine(rel) {
 
 function drawRelationshipArrowsSvg(rel) {
   const svg = document.getElementById('relSvgLayer'); if(!svg) return;
+  if(!rel) return;
+  if(!rel.edges) rel.edges = [];
+  if(!rel.nodes) rel.nodes = [];
   svg.innerHTML = `<defs></defs>`;
 
   const pairCountMap = {};
@@ -1457,6 +1460,9 @@ function addNewRelNodeOnCanvas() {
 function deleteCanvasNodeEntity(e, id) {
   e.stopPropagation();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!char.relationships) char.relationships = { nodes: [], edges: [] };
+  if(!char.relationships.nodes) char.relationships.nodes = [];
+  if(!char.relationships.edges) char.relationships.edges = [];
   char.relationships.nodes = char.relationships.nodes.filter(n => n.id !== id);
   char.relationships.edges = char.relationships.edges.filter(ed => ed.from !== id && ed.to !== id);
   saveToFirebase();
@@ -1592,6 +1598,8 @@ function renderCharacterDocument() {
 
 function openIntegratedArrowLinkModal() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!char.relationships) char.relationships = { nodes: [], edges: [] };
+  if(!char.relationships.nodes) char.relationships.nodes = [];
   const rel = char.relationships; if(rel.nodes.length < 2) return alert('최소 2명 이상의 인물 노드가 필요합니다.');
   let fromOptions = rel.nodes.map(n => `<option value="${n.id}">${n.name}</option>`).join('');
   
@@ -1611,6 +1619,8 @@ function submitIntegratedEdgeArrowLink() {
   const from = document.getElementById('modalEdgeFrom').value; const to = document.getElementById('modalEdgeTo').value;
   if(from === to) return alert('자기 자신에게 선을 그을 수 없습니다.');
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!char.relationships) char.relationships = { nodes: [], edges: [] };
+  if(!char.relationships.edges) char.relationships.edges = [];
   char.relationships.edges.push({
     from: from, to: to, text: document.getElementById('modalEdgeText').value.trim() || "관계",
     color: document.getElementById('modalEdgeCustomColorPicker').value
