@@ -1750,6 +1750,7 @@ function syncTableDataFromDOM(secId) {
 }
 
 function insertNewTableRowInlineFromNode(secId, index) {
+  syncAllSectionDataFromDOM();
   syncTableDataFromDOM(secId);
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
@@ -1757,6 +1758,7 @@ function insertNewTableRowInlineFromNode(secId, index) {
   saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteTableRowInlineFromNode(secId, index) {
+  syncAllSectionDataFromDOM();
   syncTableDataFromDOM(secId);
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
@@ -1884,6 +1886,26 @@ function submitCharacterIdentityEdit() {
   char.name = nextName; currentCharacter = nextName; closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 
+function syncAllSectionDataFromDOM() {
+  if (!currentCreator || !currentFolder || !currentCharacter) return;
+  const char = charaverseDatabase[currentCreator].folders
+    .find(f => f.name === currentFolder).characters
+    .find(c => c.name === currentCharacter);
+  if (!char) return;
+  char.sections.forEach(sec => {
+    if (sec.type === 'text') {
+      const node = document.getElementById(`editableBlock-${sec.id}`);
+      if (node) sec.data = node.innerHTML;
+    } else if (sec.type === 'table') {
+      const ths = document.querySelectorAll(`.wiki-editable-th-cell[data-secid="${sec.id}"]`);
+      const tds = document.querySelectorAll(`.wiki-editable-cell[data-secid="${sec.id}"]`);
+      let arr = [];
+      ths.forEach((th, idx) => { arr.push({ k: th.innerHTML, v: tds[idx] ? tds[idx].innerHTML : '' }); });
+      if (arr.length > 0) sec.data = arr;
+    }
+  });
+}
+
 function openNewTocModalPopup() {
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
@@ -1896,6 +1918,7 @@ function openNewTocModalPopup() {
 }
 function submitAddNewTocFromModal() {
   const title = document.getElementById('modalNewTocTitle').value.trim(); if(!title) return;
+  syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections.push({ id: "sec-" + Date.now(), title: title, type: "text", data: "이곳에 설정을 기술하세요." });
   closeGlobalModal(); saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
@@ -1912,12 +1935,14 @@ function openEditTocModalPopup(secId, currentTitle) {
 }
 function submitEditTocFromModal(secId) {
   const nextTitle = document.getElementById('modalEditTocTitle').value.trim(); if(!nextTitle) return;
+  syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId); if(sec) sec.title = nextTitle;
   closeGlobalModal(); saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteCustomSection(secId) {
   if(secId==='sec-0' || secId==='sec-1') return alert('기본 명세 축은 삭제할 수 없습니다.');
+  syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections = char.sections.filter(s => s.id !== secId);
   saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
