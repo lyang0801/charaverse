@@ -964,7 +964,7 @@ function submitWikiFootnoteInsertStamp() {
 
   closeGlobalModal();
 
-  // 이전 마운트 포커스 캐시 복원 후 정밀 마킹 코드 주입
+  // 각주 참조 노드 생성
   const node = document.createElement('a');
   node.className = "wiki-footnote-ref";
   node.id = `fn-ref-${nextNum}`;
@@ -973,18 +973,29 @@ function submitWikiFootnoteInsertStamp() {
   node.setAttribute('data-tip', txt);
   node.textContent = `[${nextNum}]`;
 
-  const sel = window.getSelection();
+  // savedSelectionRange의 startContainer가 실제 DOM에 연결되어 있는지 확인
+  let inserted = false;
   if (savedSelectionRange) {
-    sel.removeAllRanges();
-    sel.addRange(savedSelectionRange);
-    savedSelectionRange.insertNode(node);
-    savedSelectionRange.collapse(false);
-  } else {
-    // 커서 유실 안전장치용 활성 에디터 최하단 수동 추가 트리거
-    const fallback = document.querySelector('.edit-active');
-    if(fallback) fallback.appendChild(node);
+    try {
+      const container = savedSelectionRange.startContainer;
+      // isConnected 또는 document.contains로 유효성 검증
+      if (container && (container.isConnected !== false) && document.contains(container)) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRange);
+        savedSelectionRange.insertNode(node);
+        savedSelectionRange.collapse(false);
+        inserted = true;
+      }
+    } catch(e) { inserted = false; }
+  }
+  if (!inserted) {
+    // 폴백: 현재 편집 활성 블록의 끝에 추가
+    const fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.edit-active');
+    if(fallback) { fallback.focus(); fallback.appendChild(node); inserted = true; }
   }
   
+  saveToFirebase();
   renderAutoFootnoteListViewArea();
 }
 
@@ -1127,6 +1138,7 @@ function updateLiveRadarStatValue(statName, val) {
   char.radarData[statName] = parseInt(val);
   document.getElementById(`lblStatVal-${statName}`).textContent = val;
   drawCharacterRadarGraphicSvg(char.radarData);
+  saveToFirebase();
 }
 
 function renameRadarStat(oldName, newName) {
@@ -1136,6 +1148,7 @@ function renameRadarStat(oldName, newName) {
   Object.keys(char.radarData).forEach(k => { newData[k === oldName ? newName : k] = char.radarData[k]; });
   char.radarData = newData;
   drawCharacterRadarGraphicSvg(char.radarData);
+  saveToFirebase();
 }
 
 function deleteRadarStat(statName) {
@@ -1143,6 +1156,7 @@ function deleteRadarStat(statName) {
   if(Object.keys(char.radarData).length <= 3) return alert('스탯은 최소 3개 이상 유지해야 합니다.');
   delete char.radarData[statName];
   drawCharacterRadarGraphicSvg(char.radarData);
+  saveToFirebase();
 }
 
 function addRadarStat() {
@@ -1152,6 +1166,7 @@ function addRadarStat() {
   if(!name || char.radarData[name] !== undefined) return;
   char.radarData[name] = 50;
   drawCharacterRadarGraphicSvg(char.radarData);
+  saveToFirebase();
 }
 
 function updateRadarChartTitle(val) {
@@ -1159,6 +1174,7 @@ function updateRadarChartTitle(val) {
   char.radarTitle = val;
   const titleEl = document.getElementById('radarChartTitleTextEl');
   if(titleEl) titleEl.textContent = val;
+  saveToFirebase();
 }
 
 function drawCharacterRadarGraphicSvg(data) {
@@ -1388,13 +1404,14 @@ function setupDragAndDropEvents(handle, el, nodeData, rel) {
     el.style.left = nextX + "px"; el.style.top = nextY + "px";
     drawRelationshipArrowsSvg(rel);
   });
-  document.addEventListener('mouseup', () => { isDragging = false; });
+  document.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; saveToFirebase(); } else { isDragging = false; } });
 }
 
 function updateCanvasNodeNameInline(id, element) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.name = element.textContent.trim();
   drawRelationshipArrowsSvg(char.relationships);
+  saveToFirebase();
 }
 function triggerCanvasNodeImgUpload(id) { if(isCharacterEditMode) document.getElementById(`fileNode-${id}`).click(); }
 function uploadCanvasNodeImgInline(e, id) {
@@ -1402,12 +1419,14 @@ function uploadCanvasNodeImgInline(e, id) {
   const reader = new FileReader(); reader.onload = function(evt) {
     const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
     const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = evt.target.result;
+    saveToFirebase();
     initInteractiveCanvasEngine(char.relationships);
   }; reader.readAsDataURL(file);
 }
 function addNewRelNodeOnCanvas() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.relationships.nodes.push({ id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" });
+  saveToFirebase();
   initInteractiveCanvasEngine(char.relationships);
 }
 function deleteCanvasNodeEntity(e, id) {
@@ -1415,6 +1434,7 @@ function deleteCanvasNodeEntity(e, id) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.relationships.nodes = char.relationships.nodes.filter(n => n.id !== id);
   char.relationships.edges = char.relationships.edges.filter(ed => ed.from !== id && ed.to !== id);
+  saveToFirebase();
   initInteractiveCanvasEngine(char.relationships);
 }
 
@@ -1569,16 +1589,29 @@ function submitIntegratedEdgeArrowLink() {
     from: from, to: to, text: document.getElementById('modalEdgeText').value.trim() || "관계",
     color: document.getElementById('modalEdgeCustomColorPicker').value
   });
-  closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
+  saveToFirebase(); closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
+}
+
+function syncTableDataFromDOM(secId) {
+  // 행 추가/삭제 전에 현재 DOM의 내용을 데이터에 반영
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const sec = char.sections.find(s => s.id === secId); if(!sec || sec.type !== 'table') return;
+  const targetThs = document.querySelectorAll(`.wiki-editable-th-cell[data-secid="${secId}"]`);
+  const targetTds = document.querySelectorAll(`.wiki-editable-cell[data-secid="${secId}"]`);
+  let nextArray = [];
+  targetThs.forEach((th, idx) => { nextArray.push({ k: th.innerHTML, v: targetTds[idx] ? targetTds[idx].innerHTML : '' }); });
+  if(nextArray.length > 0) sec.data = nextArray;
 }
 
 function insertNewTableRowInlineFromNode(secId, index) {
+  syncTableDataFromDOM(secId);
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   sec.data.splice(index + 1, 0, { k: "새 명세명", v: "내용 기입" });
   saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteTableRowInlineFromNode(secId, index) {
+  syncTableDataFromDOM(secId);
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   if(sec.data.length <= 1) return alert('명세는 최소 1개 이상 존재해야 합니다.');
@@ -1634,6 +1667,8 @@ function toggleCharacterEditMode() {
     cells.forEach(c => { c.setAttribute('contenteditable','false'); c.classList.remove('edit-active'); });
     thCells.forEach(th => { th.setAttribute('contenteditable','false'); th.classList.remove('edit-active'); });
     ctrlWraps.forEach(w => w.style.display = 'none');
+    // 본문 이미지 플로팅 툴바 닫기
+    const floatBar = document.getElementById('inlineImgFloatBar'); if(floatBar) floatBar.remove();
     document.querySelectorAll('.toc-drag-handle').forEach(h => { h.style.display = 'none'; });
     document.querySelectorAll('.toc-link-wrapper').forEach(w => w.setAttribute('draggable','false'));
 
@@ -1752,25 +1787,178 @@ function openInlineImageInsertModal() {
   saveSelectionCacheRange();
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
-    <div class="modal-title">본문 사진 인라인 삽입</div>
+    <div class="modal-title">📸 본문 사진 삽입</div>
     <div class="modal-body-form">
-      <div class="form-group"><input type="file" id="modalInlineImgFile" accept="image/*" class="form-input"></div>
+      <div class="form-group">
+        <label class="form-label">사진 파일 선택</label>
+        <input type="file" id="modalInlineImgFile" accept="image/*" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">정렬 / 크기</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px">
+          <div>
+            <label class="form-label" style="margin-bottom:4px">정렬</label>
+            <div style="display:flex; gap:6px">
+              <button id="iiAlignLeft"  onclick="setIIAlign('left')"   style="flex:1; padding:7px 4px; border-radius:6px; border:2px solid var(--border2); background:var(--white); cursor:pointer; font-size:15px; transition:all 0.1s" title="좌측 정렬">◀ 좌</button>
+              <button id="iiAlignCenter" onclick="setIIAlign('center')" style="flex:1; padding:7px 4px; border-radius:6px; border:2px solid var(--accent); background:var(--accent-bg); cursor:pointer; font-size:15px; transition:all 0.1s" title="가운데 정렬">■ 중</button>
+              <button id="iiAlignRight" onclick="setIIAlign('right')"  style="flex:1; padding:7px 4px; border-radius:6px; border:2px solid var(--border2); background:var(--white); cursor:pointer; font-size:15px; transition:all 0.1s" title="우측 정렬">우 ▶</button>
+            </div>
+          </div>
+          <div>
+            <label class="form-label" style="margin-bottom:4px">너비 (px)</label>
+            <input type="number" id="iiWidth" class="form-input" value="260" min="80" max="700" style="text-align:center">
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
+          <input type="range" id="iiWidthRange" min="80" max="700" value="260" style="flex:1" oninput="document.getElementById('iiWidth').value=this.value">
+          <span id="iiWidthLabel" style="font-size:12px; color:var(--muted); min-width:44px">260px</span>
+        </div>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitInlineImageInsert()">본문 삽입</button></div>`;
+    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitInlineImageInsert()">본문에 삽입</button></div>`;
   document.getElementById('globalModalOverlay').style.display = "flex";
+
+  // 너비 슬라이더 ↔ 숫자 입력 양방향 동기화
+  const widthInput = document.getElementById('iiWidth');
+  const widthRange = document.getElementById('iiWidthRange');
+  const widthLabel = document.getElementById('iiWidthLabel');
+  widthInput.addEventListener('input', function() {
+    widthRange.value = this.value;
+    widthLabel.textContent = this.value + 'px';
+  });
+  widthRange.addEventListener('input', function() {
+    widthInput.value = this.value;
+    widthLabel.textContent = this.value + 'px';
+  });
+
+  window._iiAlign = 'center'; // 기본값
+}
+function setIIAlign(align) {
+  window._iiAlign = align;
+  ['left','center','right'].forEach(a => {
+    const btn = document.getElementById('iiAlign' + a.charAt(0).toUpperCase() + a.slice(1));
+    if (!btn) return;
+    if (a === align) {
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.background = 'var(--accent-bg)';
+    } else {
+      btn.style.borderColor = 'var(--border2)';
+      btn.style.background = 'var(--white)';
+    }
+  });
 }
 function submitInlineImageInsert() {
   const file = document.getElementById('modalInlineImgFile').files[0]; if(!file) return;
+  const align = window._iiAlign || 'center';
+  const width = parseInt(document.getElementById('iiWidth').value) || 260;
   const reader = new FileReader(); reader.onload = function(e) {
-    const uniqueId = "img-" + Date.now();
-    const htmlSnippet = `<div style="text-align: center;" id="wrap-${uniqueId}"><img src="${e.target.result}" style="width: 260px; border-radius:8px; margin:8px 0;"><br><button style="font-size:11px; color:#dc2626; cursor:pointer;" onclick="document.getElementById('wrap-${uniqueId}').remove()">[이미지 삭제]</button></div><p><br></p>`;
+    const uid = "iimg-" + Date.now();
+    // 정렬에 따른 wrapper 스타일
+    const wrapStyle = align === 'left'
+      ? 'display:block; text-align:left;'
+      : align === 'right'
+      ? 'display:block; text-align:right;'
+      : 'display:block; text-align:center;';
+    const htmlSnippet = `<div id="wrap-${uid}" class="inline-img-wrap" style="${wrapStyle}" data-align="${align}" contenteditable="false"><img src="${e.target.result}" id="img-${uid}" style="width:${width}px; max-width:100%; border-radius:8px; margin:6px 0; cursor:pointer; display:inline-block;" onclick="openInlineImgFloatToolbar('${uid}', this)"><br><button class="inline-img-del-btn" style="font-size:11px; color:#dc2626; cursor:pointer; background:none; border:none; padding:0; margin-top:2px" onclick="document.getElementById('wrap-${uid}').remove()">[이미지 삭제]</button></div><p><br></p>`;
     closeGlobalModal();
     const sel = window.getSelection();
     if(savedSelectionRange) {
-       sel.removeAllRanges(); sel.addRange(savedSelectionRange);
-       document.execCommand('insertHTML', false, htmlSnippet);
+      try {
+        const container = savedSelectionRange.startContainer;
+        if(container && document.contains(container)) {
+          sel.removeAllRanges(); sel.addRange(savedSelectionRange);
+          document.execCommand('insertHTML', false, htmlSnippet);
+          return;
+        }
+      } catch(err) {}
     }
+    const fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.edit-active');
+    if(fallback) fallback.innerHTML += htmlSnippet;
   }; reader.readAsDataURL(file);
+}
+
+/* ── 본문 이미지 클릭 시 플로팅 정렬/크기 툴바 ── */
+function openInlineImgFloatToolbar(uid, imgEl) {
+  if(!isCharacterEditMode) return; // 편집 모드에서만 동작
+  // 기존 툴바 제거
+  const existing = document.getElementById('inlineImgFloatBar');
+  if(existing) { existing.remove(); if(existing.dataset.uid === uid) return; }
+
+  const wrap = document.getElementById('wrap-' + uid);
+  const currentAlign = wrap ? (wrap.getAttribute('data-align') || 'center') : 'center';
+  const currentWidth = imgEl.style.width ? parseInt(imgEl.style.width) : 260;
+
+  const bar = document.createElement('div');
+  bar.id = 'inlineImgFloatBar';
+  bar.dataset.uid = uid;
+  bar.style.cssText = `
+    position:fixed; z-index:9000; background:var(--white); border:1px solid var(--border2);
+    border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,0.14); padding:10px 14px;
+    display:flex; flex-direction:column; gap:10px; min-width:240px;
+    font-size:12px; color:var(--text);
+  `;
+
+  bar.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between">
+      <span style="font-weight:700; font-size:13px; color:var(--accent)">🖼️ 이미지 편집</span>
+      <button onclick="document.getElementById('inlineImgFloatBar').remove()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);line-height:1">✕</button>
+    </div>
+    <div>
+      <div style="font-size:11px; font-weight:700; color:var(--muted2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em">정렬</div>
+      <div style="display:flex; gap:6px">
+        <button id="fbar-left-${uid}"   onclick="applyInlineImgAlign('${uid}','left')"   style="flex:1; padding:7px 0; border-radius:7px; border:2px solid ${currentAlign==='left'?'var(--accent)':'var(--border2)'}; background:${currentAlign==='left'?'var(--accent-bg)':'var(--white)'}; cursor:pointer; font-size:13px; font-weight:600">◀ 좌</button>
+        <button id="fbar-center-${uid}" onclick="applyInlineImgAlign('${uid}','center')" style="flex:1; padding:7px 0; border-radius:7px; border:2px solid ${currentAlign==='center'?'var(--accent)':'var(--border2)'}; background:${currentAlign==='center'?'var(--accent-bg)':'var(--white)'}; cursor:pointer; font-size:13px; font-weight:600">■ 중</button>
+        <button id="fbar-right-${uid}"  onclick="applyInlineImgAlign('${uid}','right')"  style="flex:1; padding:7px 0; border-radius:7px; border:2px solid ${currentAlign==='right'?'var(--accent)':'var(--border2)'}; background:${currentAlign==='right'?'var(--accent-bg)':'var(--white)'}; cursor:pointer; font-size:13px; font-weight:600">우 ▶</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px; font-weight:700; color:var(--muted2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em">크기</div>
+      <div style="display:flex; align-items:center; gap:8px">
+        <input type="range" id="fbar-range-${uid}" min="80" max="700" value="${currentWidth}" style="flex:1"
+          oninput="applyInlineImgWidth('${uid}', this.value)">
+        <span id="fbar-label-${uid}" style="min-width:44px; font-weight:600; color:var(--text); text-align:right">${currentWidth}px</span>
+      </div>
+    </div>
+    <button onclick="document.getElementById('wrap-${uid}').remove(); document.getElementById('inlineImgFloatBar').remove()" style="padding:7px; border-radius:7px; border:1px solid #fca5a5; background:#fef2f2; color:#dc2626; cursor:pointer; font-size:12px; font-weight:700">🗑 이미지 삭제</button>`;
+
+  document.body.appendChild(bar);
+
+  // 이미지 위치에 맞게 툴바 포지셔닝
+  const rect = imgEl.getBoundingClientRect();
+  let top = rect.bottom + 8;
+  let left = rect.left;
+  if(left + 260 > window.innerWidth - 12) left = window.innerWidth - 272;
+  if(top + 220 > window.innerHeight - 12) top = rect.top - 230;
+  bar.style.top = top + 'px';
+  bar.style.left = left + 'px';
+
+  // 툴바 외부 클릭 시 닫기
+  setTimeout(() => {
+    function outsideClick(ev) {
+      if(!bar.contains(ev.target) && ev.target !== imgEl) {
+        bar.remove();
+        document.removeEventListener('click', outsideClick);
+      }
+    }
+    document.addEventListener('click', outsideClick);
+  }, 100);
+}
+function applyInlineImgAlign(uid, align) {
+  const wrap = document.getElementById('wrap-' + uid); if(!wrap) return;
+  wrap.setAttribute('data-align', align);
+  wrap.style.textAlign = align;
+  // 정렬 버튼 활성 스타일 갱신
+  ['left','center','right'].forEach(a => {
+    const btn = document.getElementById('fbar-' + a + '-' + uid); if(!btn) return;
+    const active = a === align;
+    btn.style.borderColor = active ? 'var(--accent)' : 'var(--border2)';
+    btn.style.background  = active ? 'var(--accent-bg)' : 'var(--white)';
+  });
+}
+function applyInlineImgWidth(uid, val) {
+  const img = document.getElementById('img-' + uid); if(!img) return;
+  img.style.width = val + 'px';
+  const lbl = document.getElementById('fbar-label-' + uid); if(lbl) lbl.textContent = val + 'px';
 }
 
 function resizeCharacterBannerCover(val) {
@@ -1821,7 +2009,6 @@ function scrollToSection(id, element) {
   const target = document.getElementById(id); if(target) target.scrollIntoView({ behavior: 'smooth' });
   document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active')); element.classList.add('active');
 }
-function handleBack() { if (navigationHistory.length > 0) { const prev = navigationHistory.pop(); navigate(prev.view, prev.creator, prev.folder, prev.character, true); } }
 function closeGlobalModal() { document.getElementById('globalModalOverlay').style.display = "none"; }
 
 /* ==================== 각주 팝업 툴팁 엔진 ==================== */
