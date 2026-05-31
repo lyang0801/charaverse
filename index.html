@@ -136,6 +136,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .spoiler-content { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
 .spoiler-container.unveiled .spoiler-blind { display: none !important; }
 .spoiler-container.unveiled .spoiler-content { opacity: 1 !important; pointer-events: auto !important; }
+.spoiler-ctrl-bar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+.spoiler-ctrl-btn { font-size: 11px; padding: 3px 10px; border-radius: 4px; border: 1px solid #c24070; background: #fff0f4; color: #c24070; cursor: pointer; font-weight: bold; }
+.spoiler-ctrl-btn:hover { background: #ffe0e8; }
+.spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; }
+.spoiler-ctrl-btn.del:hover { background: #fde8e8; }
 
 /* ==================== 📊 방사형 차트 레이아웃 그래픽스 컴포넌트 ==================== */
 .radar-chart-outer-box { display: flex; flex-direction: column; align-items: center; background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; gap: 16px; }
@@ -1113,6 +1118,10 @@ function insertSpoilerBlindTemplateToEditor() {
   saveSelectionCacheRange();
   const html = `
     <div class="spoiler-container" contenteditable="false" style="border: 1px dashed #c24070; background: #fff5f8; padding:14px; position:relative; border-radius:8px; margin:10px 0;">
+      <div class="spoiler-ctrl-bar" style="display:none;">
+        <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
+        <button class="spoiler-ctrl-btn del" onclick="deleteSpoilerContainer(this)">🗑 블록 삭제</button>
+      </div>
       <div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #2d2327, #4a353d); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:6px; z-index:20;">
         <span style="font-weight:bold; font-size:13px; color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span>
         <span style="font-size:11px; opacity:0.8;">클릭 시 가림막이 해제되며 숨겨진 과거사 및 반전 내막이 표출됩니다.</span>
@@ -1136,8 +1145,27 @@ function unveilSpoilerContainerDirect(blindElement) {
     container.classList.add('unveiled');
     const content = container.querySelector('.spoiler-content');
     if(content) { content.style.opacity = "1"; content.style.pointerEvents = "auto"; }
-    blindElement.remove();
+    blindElement.style.display = 'none';
+    // 컨트롤 바의 가리기 버튼 표시
+    const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
+    if(ctrlBar) ctrlBar.style.display = 'flex';
   }
+}
+function reveilSpoilerContainer(btn) {
+  const container = btn.closest('.spoiler-container');
+  if(container) {
+    container.classList.remove('unveiled');
+    const blind = container.querySelector('.spoiler-blind');
+    const content = container.querySelector('.spoiler-content');
+    if(blind) blind.style.display = 'flex';
+    if(content) { content.style.opacity = "0.2"; content.style.pointerEvents = "none"; }
+    const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
+    if(ctrlBar) ctrlBar.style.display = 'none';
+  }
+}
+function deleteSpoilerContainer(btn) {
+  const container = btn.closest('.spoiler-container');
+  if(container) container.remove();
 }
 
 /* ==================== 📊 방사형 레이더 스탯 차트(Radar Chart) 라이브 렌더 엔진 ==================== */
@@ -1636,6 +1664,20 @@ function renderCharacterDocument() {
   document.getElementById('sidebarCharList').innerHTML = sHtml;
   
   renderAutoFootnoteListViewArea();
+  injectSpoilerCtrlBars();
+}
+
+function injectSpoilerCtrlBars() {
+  document.querySelectorAll('.spoiler-container').forEach(container => {
+    if(container.querySelector('.spoiler-ctrl-bar')) return; // 이미 있으면 스킵
+    const bar = document.createElement('div');
+    bar.className = 'spoiler-ctrl-bar';
+    bar.style.display = 'none';
+    bar.innerHTML = `
+      <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
+      <button class="spoiler-ctrl-btn del" onclick="deleteSpoilerContainer(this)">🗑 블록 삭제</button>`;
+    container.insertBefore(bar, container.firstChild);
+  });
 }
 
 function openIntegratedArrowLinkModal() {
