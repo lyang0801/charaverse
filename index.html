@@ -1709,6 +1709,15 @@ function toggleCharacterEditMode() {
     });
     document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'flex');
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'flex');
+    // 편집 ON 시 기존 노드에 드래그 이벤트 재연결
+    const char2 = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+    if(char2.relationships && char2.relationships.nodes) {
+      char2.relationships.nodes.forEach(nd => {
+        const nodeEl = document.getElementById('nodeEl-' + nd.id);
+        const handleEl = document.getElementById('handle-' + nd.id);
+        if(nodeEl && handleEl) setupDragAndDropEvents(handleEl, nodeEl, nd, char2.relationships);
+      });
+    }
   } else {
     btn.textContent = '편집 하기'; btn.style.background = ''; btn.style.borderColor = '';
     toolbar.style.display = 'none'; tocAddBtn.style.display = 'none';
@@ -1727,6 +1736,13 @@ function toggleCharacterEditMode() {
     document.querySelectorAll('.toc-link-wrapper').forEach(w => w.setAttribute('draggable','false'));
 
     const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+    // 관계도 노드 DOM 위치를 데이터에 먼저 동기화 (드래그 위치 보존)
+    if(char.relationships && char.relationships.nodes) {
+      char.relationships.nodes.forEach(nd => {
+        const nodeEl = document.getElementById('nodeEl-' + nd.id);
+        if(nodeEl) { nd.x = parseInt(nodeEl.style.left) || nd.x; nd.y = parseInt(nodeEl.style.top) || nd.y; }
+      });
+    }
     char.sections.forEach(sec => {
       if(sec.type === 'text') {
         const node = document.getElementById(`editableBlock-${sec.id}`); if(node) sec.data = node.innerHTML;
