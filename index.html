@@ -1120,7 +1120,7 @@ function insertSpoilerBlindTemplateToEditor() {
     <div class="spoiler-container" contenteditable="false" style="border: 1px dashed #c24070; background: #fff5f8; padding:14px; position:relative; border-radius:8px; margin:10px 0;">
       <div class="spoiler-ctrl-bar" style="display:none;">
         <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
-        <button class="spoiler-ctrl-btn del" onclick="deleteSpoilerContainer(this)">🗑 블록 삭제</button>
+        <button class="spoiler-ctrl-btn del spoiler-del-btn" onclick="deleteSpoilerContainer(this)" style="display:none">🗑 블록 삭제</button>
       </div>
       <div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #2d2327, #4a353d); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:6px; z-index:20;">
         <span style="font-weight:bold; font-size:13px; color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span>
@@ -1148,7 +1148,11 @@ function unveilSpoilerContainerDirect(blindElement) {
     blindElement.style.display = 'none';
     // 컨트롤 바의 가리기 버튼 표시
     const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
-    if(ctrlBar) ctrlBar.style.display = 'flex';
+    if(ctrlBar) {
+      ctrlBar.style.display = 'flex';
+      const delBtn = ctrlBar.querySelector('.spoiler-del-btn');
+      if(delBtn) delBtn.style.display = isCharacterEditMode ? 'inline-block' : 'none';
+    }
   }
 }
 function reveilSpoilerContainer(btn) {
@@ -1799,6 +1803,7 @@ function toggleCharacterEditMode() {
     });
     document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'flex');
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'flex');
+    document.querySelectorAll('.spoiler-del-btn').forEach(btn => btn.style.display = 'inline-block');
     // 편집 ON 시 기존 노드에 드래그 이벤트 재연결
     const char2 = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
     if(char2.relationships && char2.relationships.nodes) {
@@ -1846,6 +1851,7 @@ function toggleCharacterEditMode() {
     });
     document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'none');
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'none');
+    document.querySelectorAll('.spoiler-del-btn').forEach(btn => btn.style.display = 'none');
 
     // 먼저 저장하고, renderCharacterDocument는 관계도 캔버스를 건드리지 않도록
     // 관계도 노드 contenteditable을 false로만 바꾸고 캔버스 재렌더는 하지 않음
