@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHARAVERSE — 비주얼 캔버스 에디션 (V11)</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -427,71 +430,59 @@ let isFolderEditUiActive = false;
 let globalSelectedFontClass = 'canvas-font-notosans';
 let savedSelectionRange = null;
 
-// ── Firebase 초기화 ──
-(function initFirebase() {
-  function loadScript(src, cb) {
-    var s = document.createElement('script'); s.src = src;
-    s.onload = cb; document.head.appendChild(s);
+// Firebase 초기화
+firebase.initializeApp({
+  apiKey: "AIzaSyIfdoomstCV8zakpUWPCrAzCmYQv18",
+  authDomain: "charaverse-8cbfc.firebaseapp.com",
+  databaseURL: "https://charaverse-8cbfc-default-rtdb.firebaseio.com",
+  projectId: "charaverse-8cbfc",
+  storageBucket: "charaverse-8cbfc.firebasestorage.app",
+  messagingSenderId: "398820095346",
+  appId: "1:398820095346:web:a365d10aa98b173c8d9eb"
+});
+var _dbRef = firebase.database().ref('charaverse');
+
+_dbRef.on('value', function(snapshot) {
+  var data = snapshot.val();
+  if (data) { charaverseDatabase = data; }
+  else { _dbRef.set(charaverseDatabase); }
+  if (!window._fbReady) {
+    window._fbReady = true;
+    renderCircleCreatorGrid();
+    updateNavbar();
+  } else if (!window._myWrite) {
+    if (currentView === 'main') renderCircleCreatorGrid();
+    else if (currentView === 'creator') renderCreatorProfilePage();
+    else if (currentView === 'folder') renderFolderContentPage();
+    else if (currentView === 'character') renderCharacterDocument();
   }
-  loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', function() {
-    loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js', function() {
-      firebase.initializeApp({
-        apiKey: "AIzaSyIfdoomstCV8zakpUWPCrAzCmYQv18",
-        authDomain: "charaverse-8cbfc.firebaseapp.com",
-        databaseURL: "https://charaverse-8cbfc-default-rtdb.firebaseio.com",
-        projectId: "charaverse-8cbfc",
-        storageBucket: "charaverse-8cbfc.firebasestorage.app",
-        messagingSenderId: "398820095346",
-        appId: "1:398820095346:web:a365d10aa98b173c8d9eb"
-      });
-      var dbRef = firebase.database().ref('charaverse');
+  window._myWrite = false;
+});
 
-      // Firebase → 앱 실시간 수신
-      dbRef.on('value', function(snapshot) {
-        var data = snapshot.val();
-        if (data) { charaverseDatabase = data; }
-        else { dbRef.set(charaverseDatabase); }
-        if (!window._fbReady) {
-          window._fbReady = true;
-          renderCircleCreatorGrid();
-          updateNavbar();
-        } else if (!window._myWrite) {
-          // 다른 사람이 바꿨을 때만 화면 갱신
-          if (currentView === 'main') renderCircleCreatorGrid();
-          else if (currentView === 'creator') renderCreatorProfilePage();
-          else if (currentView === 'folder') renderFolderContentPage();
-          else if (currentView === 'character') renderCharacterDocument();
-        }
-        window._myWrite = false;
-      });
-
-      window.saveToFirebase = function() {
-        window._myWrite = true;
-        dbRef.set(charaverseDatabase);
-      };
-      window.deleteCreator = function(name) {
-        if (!confirm("'" + name + "' 창작자를 삭제할까요?")) return;
-        delete charaverseDatabase[name];
-        window._myWrite = true;
-        dbRef.set(charaverseDatabase).then(function() { clearToMain(); });
-      };
-      window.deleteFolder = function(folderName) {
-        if (!confirm("'" + folderName + "' 세계관을 삭제할까요?")) return;
-        charaverseDatabase[currentCreator].folders =
-          charaverseDatabase[currentCreator].folders.filter(function(f) { return f.name !== folderName; });
-        window._myWrite = true;
-        dbRef.set(charaverseDatabase).then(function() { navigate('creator', currentCreator); });
-      };
-      window.deleteCharacterCard = function(charName) {
-        if (!confirm("'" + charName + "' 캐릭터를 삭제할까요?")) return;
-        var folder = charaverseDatabase[currentCreator].folders.find(function(f) { return f.name === currentFolder; });
-        folder.characters = folder.characters.filter(function(c) { return c.name !== charName; });
-        window._myWrite = true;
-        dbRef.set(charaverseDatabase).then(function() { renderFolderContentPage(); });
-      };
-    });
-  });
-})();
+window.saveToFirebase = function() {
+  window._myWrite = true;
+  _dbRef.set(charaverseDatabase);
+};
+window.deleteCreator = function(name) {
+  if (!confirm("'" + name + "' 창작자를 삭제할까요?")) return;
+  delete charaverseDatabase[name];
+  window._myWrite = true;
+  _dbRef.set(charaverseDatabase).then(function() { clearToMain(); });
+};
+window.deleteFolder = function(folderName) {
+  if (!confirm("'" + folderName + "' 세계관을 삭제할까요?")) return;
+  charaverseDatabase[currentCreator].folders =
+    charaverseDatabase[currentCreator].folders.filter(function(f) { return f.name !== folderName; });
+  window._myWrite = true;
+  _dbRef.set(charaverseDatabase).then(function() { navigate('creator', currentCreator); });
+};
+window.deleteCharacterCard = function(charName) {
+  if (!confirm("'" + charName + "' 캐릭터를 삭제할까요?")) return;
+  var folder = charaverseDatabase[currentCreator].folders.find(function(f) { return f.name === currentFolder; });
+  folder.characters = folder.characters.filter(function(c) { return c.name !== charName; });
+  window._myWrite = true;
+  _dbRef.set(charaverseDatabase).then(function() { renderFolderContentPage(); });
+};
 
 function changeGlobalTheme(val) { document.documentElement.setAttribute('data-theme', val); }
 function changeGlobalFontLayoutEngine(fontClass) {
