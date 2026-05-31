@@ -589,6 +589,7 @@ firebase.initializeApp({
   appId: "1:398820095346:web:a365d10aa98b173c8d9eb"
 });
 var _dbRef = firebase.database().ref('charaverse');
+var _lastSaveTime = 0;
 _dbRef.on('value', function(snapshot) {
   var data = snapshot.val();
   if (data) { charaverseDatabase = data; }
@@ -597,15 +598,26 @@ _dbRef.on('value', function(snapshot) {
     window._fbReady = true;
     renderCircleCreatorGrid();
     updateNavbar();
-  } else if (!window._myWrite) {
-    if (currentView === 'main') renderCircleCreatorGrid();
-    else if (currentView === 'creator') renderCreatorProfilePage();
-    else if (currentView === 'folder') renderFolderContentPage();
-    else if (currentView === 'character') renderCharacterDocument();
+    return;
   }
-  window._myWrite = false;
+  // 내가 저장한 직후 500ms 이내면 리렌더 생략 (깜박임 방지)
+  var now = Date.now();
+  if (now - _lastSaveTime < 500) return;
+  // 편집 모드 중에는 데이터만 갱신 (입력 방해 방지)
+  if (isCharacterEditMode) return;
+  if (currentView === 'main') renderCircleCreatorGrid();
+  else if (currentView === 'creator') renderCreatorProfilePage();
+  else if (currentView === 'folder') renderFolderContentPage();
+  else if (currentView === 'character') renderCharacterDocument();
 });
-window.saveToFirebase = function() { window._myWrite = true; _dbRef.set(charaverseDatabase); };
+window.saveToFirebase = function() { _lastSaveTime = Date.now(); _dbRef.set(charaverseDatabase); };
+// 특정 창작자만 부분 저장 (속도 최적화)
+window.saveCreatorToFirebase = function(creatorName) {
+  _lastSaveTime = Date.now();
+  var update = {};
+  update[creatorName] = charaverseDatabase[creatorName];
+  _dbRef.update(update);
+};
 window.deleteCreator = function(name) {
   if (!confirm("'" + name + "' 창작자를 삭제할까요?")) return;
   delete charaverseDatabase[name]; window._myWrite = true;
@@ -867,7 +879,7 @@ function submitFolderWorldSettingTextPopup() {
   fData.worldSetting = document.getElementById('modalWorldSettingTextarea').value;
   fData.worldTitle = document.getElementById('modalWorldTitle').value.trim() || fData.name;
   fData.worldSubtitle = document.getElementById('modalWorldSubtitle').value.trim();
-  closeGlobalModal(); renderFolderContentPage();
+  closeGlobalModal(); saveToFirebase(); renderFolderContentPage();
 }
 function resizeFolderBannerCover(val) {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).bannerHeight = val;
@@ -907,7 +919,7 @@ function submitAddNewCharacter() {
       { id: "sec-2", title: "2. 상세 특징 서술", type: "text", data: "이곳에 특징 요약을 집필해 보세요." }
     ]
   });
-  closeGlobalModal(); renderFolderContentPage();
+  closeGlobalModal(); saveToFirebase(); renderFolderContentPage();
 }
 
 /* ==================== 🛠️ 나무위키 실시간 주석 엔진 완전 수리 파트 ==================== */
@@ -967,14 +979,28 @@ function renderAutoFootnoteListViewArea() {
   if(!char.footnotes || char.footnotes.length === 0) { area.style.display = "none"; return; }
   area.style.display = "block";
   let html = `<div style="font-weight:bold; font-size:12px; margin-bottom:8px; color:var(--text)">[각주 주석 명세 리스트]</div>`;
-  char.footnotes.forEach(f => {
+  char.footnotes.forEach((f, fIdx) => {
     const num = f.id.replace('fn-', '');
-    html += `<div class="footnote-item" id="fn-link-${num}">
-      <a class="footnote-num" onclick="document.getElementById('fn-ref-${num}').scrollIntoView({behavior:'smooth'})">[${num}]</a>
-      <span class="footnote-text">${f.text}</span>
+    html += `<div class="footnote-item" id="fn-link-${num}" style="display:flex;align-items:flex-start;gap:6px;">
+      <a class="footnote-num" onclick="document.getElementById('fn-ref-${num}') && document.getElementById('fn-ref-${num}').scrollIntoView({behavior:'smooth'})">[${num}]</a>
+      <span class="footnote-text" style="flex:1">${f.text}</span>
+      <span onclick="deleteFootnoteEntry(${fIdx})" style="color:#dc2626;cursor:pointer;font-size:11px;flex-shrink:0;padding:1px 4px;border-radius:4px;border:1px solid #fca5a5;" title="각주 삭제">✕</span>
     </div>`;
   });
   area.innerHTML = html;
+}
+
+function deleteFootnoteEntry(fIdx) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  if(!char.footnotes || fIdx < 0 || fIdx >= char.footnotes.length) return;
+  const removedId = char.footnotes[fIdx].id;
+  const num = removedId.replace('fn-', '');
+  // DOM에서 해당 각주 참조 태그도 제거
+  const refEl = document.getElementById('fn-ref-' + num);
+  if(refEl) refEl.remove();
+  char.footnotes.splice(fIdx, 1);
+  saveToFirebase();
+  renderAutoFootnoteListViewArea();
 }
 
 /* ==================== 🛠️ 커스텀 에디터 내 즉각 표(Table) 주입 완전 수리 파트 ==================== */
@@ -1534,14 +1560,14 @@ function insertNewTableRowInlineFromNode(secId, index) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   sec.data.splice(index + 1, 0, { k: "새 명세명", v: "내용 기입" });
-  renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteTableRowInlineFromNode(secId, index) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   if(sec.data.length <= 1) return alert('명세는 최소 1개 이상 존재해야 합니다.');
   sec.data.splice(index, 1);
-  renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 
 function toggleCharacterEditMode() {
@@ -1611,7 +1637,7 @@ function toggleCharacterEditMode() {
     document.querySelectorAll('.rel-node-drag-handle').forEach(h => h.style.display = 'none');
     document.querySelectorAll('.rel-node-x-btn').forEach(xb => xb.style.display = 'none');
 
-    renderCharacterDocument(); saveToFirebase();
+    renderCharacterDocument(); saveCreatorToFirebase(currentCreator);
   }
 }
 
@@ -1647,7 +1673,7 @@ function submitAddNewTocFromModal() {
   const title = document.getElementById('modalNewTocTitle').value.trim(); if(!title) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections.push({ id: "sec-" + Date.now(), title: title, type: "text", data: "이곳에 설정을 기술하세요." });
-  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  closeGlobalModal(); saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function openEditTocModalPopup(secId, currentTitle) {
   const modal = document.getElementById('modalWindowContent');
@@ -1663,13 +1689,13 @@ function submitEditTocFromModal(secId) {
   const nextTitle = document.getElementById('modalEditTocTitle').value.trim(); if(!nextTitle) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId); if(sec) sec.title = nextTitle;
-  closeGlobalModal(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  closeGlobalModal(); saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteCustomSection(secId) {
   if(secId==='sec-0' || secId==='sec-1') return alert('기본 명세 축은 삭제할 수 없습니다.');
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections = char.sections.filter(s => s.id !== secId);
-  renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
+  saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 
 function openInlineImageInsertModal() {
@@ -1812,6 +1838,7 @@ function setupTocDragEvents(wrapper) {
     if(srcIdx < 0 || dstIdx < 0) return;
     const [moved] = char.sections.splice(srcIdx, 1);
     char.sections.splice(dstIdx, 0, moved);
+    saveToFirebase();
     renderCharacterDocument();
     isCharacterEditMode = false; toggleCharacterEditMode();
   });
@@ -1892,8 +1919,8 @@ function renderPhone() {
     var hm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
     var days = ['일','월','화','수','목','금','토'];
     var dateStr = (now.getMonth()+1) + '월 ' + now.getDate() + '일 ' + days[now.getDay()] + '요일';
-    var bgStyle = pd.bg ? 'background-image:url("' + pd.bg + '");background-size:cover;background-position:center;' : 'background:linear-gradient(160deg,#1a1a2e,#16213e,#0f3460);';
-    scr.innerHTML = '<div class="phone-home" style="' + bgStyle + ';position:relative;flex:1;display:flex;flex-direction:column">' +
+    var bgStyle = pd.bg ? 'background-image:url(\'' + pd.bg + '\');background-size:cover;background-position:center;' : 'background:linear-gradient(160deg,#1a1a2e,#16213e,#0f3460);';
+    scr.innerHTML = '<div class="phone-home" style="' + bgStyle + 'position:relative;flex:1;display:flex;flex-direction:column">' +
       '<div class="phone-home-overlay"></div>' +
       '<div class="phone-status-bar"><span>' + hm + '</span><span>📶 🔋</span></div>' +
       '<div class="phone-home-time"><div class="ph-time">' + hm + '</div><div class="ph-date">' + dateStr + '</div></div>' +
