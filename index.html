@@ -972,6 +972,7 @@ function submitWikiFootnoteInsertStamp() {
   const txt = document.getElementById('modalFootnoteInputText').value.trim(); if(!txt) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   
+  if(!char.footnotes) char.footnotes = [];
   const nextNum = char.footnotes.length + 1;
   char.footnotes.push({ id: `fn-${nextNum}`, text: txt });
 
@@ -1298,6 +1299,9 @@ function executeLiveMarkdownShortcutParser(element) {
 
 /* ==================== 🛠️ 관계도 쌍방 곡선 분리 및 정밀 연산 고도화 ==================== */
 function initInteractiveCanvasEngine(rel) {
+  if(!rel) rel = { nodes: [], edges: [] };
+  if(!rel.nodes) rel.nodes = [];
+  if(!rel.edges) rel.edges = [];
   const viewport = document.getElementById('relCanvasViewport');
   const svg = document.getElementById('relSvgLayer'); if(!viewport || !svg) return;
   viewport.querySelectorAll('.rel-node-circle').forEach(n => n.remove());
