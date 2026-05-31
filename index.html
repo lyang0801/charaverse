@@ -253,13 +253,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .chat-msg-row{display:flex;align-items:flex-end;gap:5px;max-width:88%;margin-bottom:2px}
 .chat-msg-row.mine{align-self:flex-end;flex-direction:row-reverse}
 .chat-msg-row.theirs{align-self:flex-start}
-.chat-msg-avatar{width:28px;height:28px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;overflow:hidden;align-self:flex-end;margin-bottom:0}
+.chat-msg-avatar{width:36px;height:36px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;overflow:hidden;align-self:flex-end;margin-bottom:0}
 .chat-msg-avatar img{width:100%;height:100%;object-fit:cover}
 .chat-msg-bubble{padding:8px 12px;border-radius:18px;font-size:13px;line-height:1.5;word-break:break-word;position:relative;max-width:210px}
 .chat-msg-bubble img{max-width:100%;border-radius:10px;display:block}
 .chat-msg-row.mine .chat-msg-bubble{border-bottom-right-radius:4px;color:#fff}
 .chat-msg-row.theirs .chat-msg-bubble{border-bottom-left-radius:4px;background:rgba(255,255,255,0.95);color:#1a1916}
-.chat-msg-meta{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:1px;margin-bottom:2px}
+.chat-msg-meta{display:flex;flex-direction:column-reverse;align-items:flex-end;justify-content:flex-start;gap:2px;align-self:flex-end;padding-bottom:2px}
 .chat-msg-row.theirs .chat-msg-meta{align-items:flex-start}
 .chat-msg-time{font-size:10px;color:rgba(0,0,0,0.38);white-space:nowrap}
 .chat-msg-del{font-size:11px;opacity:0;cursor:pointer;color:#ef4444;transition:opacity 0.2s;user-select:none}
@@ -301,8 +301,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .phone-modal-btn.cancel{background:#f0f0f0;color:#555}
 /* 앨범 */
 .album-app{flex:1;display:flex;flex-direction:column;background:#fff;overflow:hidden}
-.album-profile-banner{width:100%;height:100px;background-size:cover;background-position:center;position:relative;flex-shrink:0}
-.album-profile-row{display:flex;align-items:flex-end;gap:10px;padding:0 14px;margin-top:-28px;position:relative;z-index:2;margin-bottom:8px}
+.album-profile-banner{width:100%;height:90px;background-size:cover;background-position:center;position:relative;flex-shrink:0}
+.album-profile-row{display:flex;align-items:center;gap:10px;padding:8px 14px 8px;position:relative;z-index:2;margin-bottom:4px;background:#fff;border-bottom:1px solid #f0f0f0}
 .album-avatar{width:58px;height:58px;border-radius:50%;border:3px solid #fff;background:#e8e8e8;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
 .album-avatar img{width:100%;height:100%;object-fit:cover}
 .album-profile-info{flex:1;padding-bottom:4px;min-width:0}
@@ -2005,12 +2005,12 @@ function renderChatRoom() {
     // 이미지 vs 텍스트
     var bubbleContent = m.image ? '<img src="'+m.image+'" style="max-width:160px;border-radius:10px">' : m.text;
     var metaHtml = '<div class="chat-msg-meta">' +
-      '<span class="chat-msg-time">' + (m.time||'') + '</span>' +
       '<span class="chat-msg-del" onclick="deleteMsg('+mi+')">✕</span>' +
+      '<span class="chat-msg-time">' + (m.time||'') + '</span>' +
     '</div>';
     msgsHtml += '<div class="chat-msg-row ' + (isMine?'mine':'theirs') + '">' +
       (!isMine ? senderAv : '') +
-      '<div>' + senderName +
+      '<div style="display:flex;flex-direction:column;">' + senderName +
         '<div style="display:flex;align-items:flex-end;gap:4px;' + (isMine?'flex-direction:row-reverse':'') + '">' +
           '<div class="chat-msg-bubble" style="' + bubbleStyle + (isMine?'color:#fff':'') + '">' + bubbleContent + '</div>' +
           metaHtml +
