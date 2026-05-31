@@ -944,25 +944,21 @@ function saveSelectionCacheRange() {
 }
 
 function executeWikiFootnoteSystemStamp() {
-  saveSelectionCacheRange();
-  const modal = document.getElementById('modalWindowContent');
-  modal.innerHTML = `
-    <div class="modal-title">📌 단어 실시간 각주 주석 달기</div>
-    <div class="modal-body-form">
-      <div class="form-group"><label class="form-label">각주 상세 내용 입력 (나무위키 스타일)</label><input type="text" id="modalFootnoteInputText" class="form-input" placeholder="상세 설명을 적어주세요."></div>
-    </div>
-    <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitWikiFootnoteInsertStamp()">즉시 각주 스탬프 주입</button></div>`;
-  document.getElementById('globalModalOverlay').style.display = "flex";
+  // 모달을 쓰면 포커스 이동으로 selection이 날아가므로 prompt() 사용
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    savedSelectionRange = sel.getRangeAt(0).cloneRange();
+  }
+  const txt = prompt('각주 내용을 입력하세요 (나무위키 스타일):');
+  if (!txt || !txt.trim()) return;
+  submitWikiFootnoteInsertStamp(txt.trim());
 }
 
-function submitWikiFootnoteInsertStamp() {
-  const txt = document.getElementById('modalFootnoteInputText').value.trim(); if(!txt) return;
+function submitWikiFootnoteInsertStamp(txt) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   
   const nextNum = char.footnotes.length + 1;
   char.footnotes.push({ id: `fn-${nextNum}`, text: txt });
-
-  closeGlobalModal();
 
   // 각주 참조 노드 생성
   const node = document.createElement('a');
@@ -973,13 +969,11 @@ function submitWikiFootnoteInsertStamp() {
   node.setAttribute('data-tip', txt);
   node.textContent = `[${nextNum}]`;
 
-  // savedSelectionRange의 startContainer가 실제 DOM에 연결되어 있는지 확인
   let inserted = false;
   if (savedSelectionRange) {
     try {
       const container = savedSelectionRange.startContainer;
-      // isConnected 또는 document.contains로 유효성 검증
-      if (container && (container.isConnected !== false) && document.contains(container)) {
+      if (container && document.contains(container)) {
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(savedSelectionRange);
@@ -990,7 +984,6 @@ function submitWikiFootnoteInsertStamp() {
     } catch(e) { inserted = false; }
   }
   if (!inserted) {
-    // 폴백: 현재 편집 활성 블록의 끝에 추가
     const fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.edit-active');
     if(fallback) { fallback.focus(); fallback.appendChild(node); inserted = true; }
   }
@@ -1495,7 +1488,7 @@ function renderCharacterDocument() {
            </div>`;
       imgBoxWrapper.innerHTML = `
         <div class="full-shot-box" id="innerFullShotBox" style="width:${w}px; height:${h}px; margin:${char.imageAlign==='center'?'0 auto':(char.imageAlign==='right'?'0 0 0 auto':'0')};">${innerBoxHtml}</div>
-        <div class="full-shot-control-panel" id="fullShotControlPanelBox">
+        <div class="full-shot-control-panel" id="fullShotControlPanelBox" style="display:${isCharacterEditMode ? 'flex' : 'none'}">
           <div style="display:flex; gap:6px">
             <label class="btn" style="font-size:11px; padding:4px 8px">📸 파일 탐색기<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot(event)"></label>
             <button class="btn" style="font-size:11px; padding:4px 8px; color:#dc2626" onclick="clearCharacterFullShotImg()">사진 제거</button>
@@ -1532,7 +1525,7 @@ function renderCharacterDocument() {
       relBlock.className = "rel-system-outer";
       relBlock.innerHTML = `
         <div class="rel-system-header">🔮 겹침 방지형 인터랙티브 인물 관계도 캔버스</div>
-        <div class="rel-toolbar" id="relToolbarWrapperContainer">
+        <div class="rel-toolbar" id="relToolbarWrapperContainer" style="display:${isCharacterEditMode ? 'flex' : 'none'}">
           <button class="btn" onclick="addNewRelNodeOnCanvas()" style="color:var(--teal)">＋ 인물 원형 노드 추가</button>
           <button class="btn" onclick="openIntegratedArrowLinkModal()" style="color:var(--accent)">⛓️ 관계 화살표 직접 연결</button>
         </div>
