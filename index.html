@@ -248,34 +248,101 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .chat-header-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,0.25)}
 .chat-header-avatar img{width:100%;height:100%;object-fit:cover}
 .chat-header-name{font-size:15px;font-weight:700;flex:1;color:#fff}
-.chat-messages{flex:1;overflow-y:auto;padding:10px 10px;display:flex;flex-direction:column;gap:5px}
-.chat-msg-row{display:flex;align-items:flex-end;gap:5px;max-width:88%}
+/* 채팅 메시지 영역 */
+.chat-messages{flex:1;overflow-y:auto;padding:12px 10px 6px;display:flex;flex-direction:column;gap:2px}
+.chat-msg-row{display:flex;align-items:flex-end;gap:5px;max-width:88%;margin-bottom:2px}
 .chat-msg-row.mine{align-self:flex-end;flex-direction:row-reverse}
 .chat-msg-row.theirs{align-self:flex-start}
-.chat-msg-avatar{width:26px;height:26px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;overflow:hidden;align-self:flex-start;margin-top:2px}
+.chat-msg-avatar{width:28px;height:28px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;overflow:hidden;align-self:flex-end;margin-bottom:0}
 .chat-msg-avatar img{width:100%;height:100%;object-fit:cover}
 .chat-msg-bubble{padding:8px 12px;border-radius:18px;font-size:13px;line-height:1.5;word-break:break-word;position:relative;max-width:210px}
+.chat-msg-bubble img{max-width:100%;border-radius:10px;display:block}
 .chat-msg-row.mine .chat-msg-bubble{border-bottom-right-radius:4px;color:#fff}
 .chat-msg-row.theirs .chat-msg-bubble{border-bottom-left-radius:4px;background:rgba(255,255,255,0.95);color:#1a1916}
-.chat-msg-time{font-size:10px;color:rgba(0,0,0,0.4);white-space:nowrap;margin-bottom:2px}
+.chat-msg-meta{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:1px;margin-bottom:2px}
+.chat-msg-row.theirs .chat-msg-meta{align-items:flex-start}
+.chat-msg-time{font-size:10px;color:rgba(0,0,0,0.38);white-space:nowrap}
 .chat-msg-del{font-size:11px;opacity:0;cursor:pointer;color:#ef4444;transition:opacity 0.2s;user-select:none}
 .chat-msg-row:hover .chat-msg-del{opacity:1}
-.chat-name-sender{font-size:11px;color:rgba(0,0,0,0.45);margin-bottom:2px;padding-left:2px}
-.chat-input-area{padding:7px 10px;border-top:1px solid rgba(0,0,0,0.08);background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);flex-shrink:0}
-.chat-toolbar{display:flex;gap:5px;padding:0 0 6px;flex-wrap:wrap;align-items:center}
+.chat-name-sender{font-size:11px;color:rgba(0,0,0,0.45);margin-bottom:2px;padding-left:4px}
+.chat-date-divider{display:flex;align-items:center;gap:8px;margin:10px 0;color:rgba(0,0,0,0.38);font-size:11px;cursor:pointer;user-select:none}
+.chat-date-divider::before,.chat-date-divider::after{content:'';flex:1;height:1px;background:rgba(0,0,0,0.13)}
+.chat-date-divider:hover{color:rgba(0,0,0,0.6)}
+.chat-input-area{padding:6px 8px;border-top:1px solid rgba(0,0,0,0.08);background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);flex-shrink:0}
+.chat-toolbar{display:flex;gap:5px;padding:0 0 5px;flex-wrap:wrap;align-items:center}
 .chat-toolbar select{font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#333}
 .chat-toolbar input[type=color]{width:26px;height:24px;border:1px solid #ddd;border-radius:6px;cursor:pointer;padding:1px 2px}
+.chat-toolbar label.img-upload-label{font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#333;cursor:pointer;white-space:nowrap;display:flex;align-items:center}
+.chat-toolbar label.img-upload-label:hover{background:#f5f5f5}
 .chat-input-row{display:flex;gap:7px;align-items:flex-end}
 .chat-input-box{flex:1;background:#fff;border:1px solid #ddd;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;resize:none;max-height:80px;font-family:inherit;color:#1a1916;line-height:1.4}
 .chat-send-btn{width:36px;height:36px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff;transition:transform 0.1s}
 .chat-send-btn:hover{transform:scale(1.08)}
-.chat-settings-wrap{flex:1;overflow-y:auto;padding:14px}
-.chat-settings-wrap h3{font-size:14px;font-weight:700;margin-bottom:12px;color:#1a1916}
-.settings-row{margin-bottom:12px}
+.chat-settings-wrap{flex:1;overflow-y:auto;padding:0;background:#f5f5f5}
+.chat-settings-section{background:#fff;margin-bottom:8px;padding:14px 16px}
+.chat-settings-section-title{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.settings-row{margin-bottom:10px}
 .settings-row label{font-size:12px;color:#888;display:block;margin-bottom:4px}
 .settings-row input,.settings-row select,.settings-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1916;font-family:inherit}
 .settings-row input[type=color]{padding:2px 4px;height:34px;cursor:pointer}
-.settings-save-btn{width:100%;padding:10px;background:#6b4fd8;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}
+.settings-file-label{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;color:#555;cursor:pointer;background:#fff;margin-top:4px}
+.settings-file-label:hover{background:#f5f5f5}
+.settings-img-preview{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-top:6px;display:block}
+.settings-save-btn{width:calc(100% - 32px);margin:0 16px 16px;padding:11px;background:#6b4fd8;color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-weight:600}
+.phone-modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;border-radius:44px;overflow:hidden}
+.phone-modal-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 28px;width:100%;display:flex;flex-direction:column;gap:8px}
+.phone-modal-title{font-size:15px;font-weight:700;color:#1a1916;text-align:center;margin-bottom:4px}
+.phone-modal-desc{font-size:13px;color:#888;text-align:center;margin-bottom:8px}
+.phone-modal-input{width:100%;padding:10px 14px;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;color:#1a1916;font-family:inherit;outline:none;background:#f9f9f9}
+.phone-modal-input:focus{border-color:#6b4fd8;background:#fff}
+.phone-modal-btn{width:100%;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer}
+.phone-modal-btn.confirm{background:#6b4fd8;color:#fff}
+.phone-modal-btn.danger{background:#ef4444;color:#fff}
+.phone-modal-btn.cancel{background:#f0f0f0;color:#555}
+/* 앨범 */
+.album-app{flex:1;display:flex;flex-direction:column;background:#fff;overflow:hidden}
+.album-profile-banner{width:100%;height:100px;background:linear-gradient(135deg,#667eea,#764ba2);background-size:cover;background-position:center;position:relative;flex-shrink:0}
+.album-profile-row{display:flex;align-items:flex-end;gap:10px;padding:0 14px;margin-top:-28px;position:relative;z-index:2;margin-bottom:8px}
+.album-avatar{width:58px;height:58px;border-radius:50%;border:3px solid #fff;background:#e8e8e8;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.album-avatar img{width:100%;height:100%;object-fit:cover}
+.album-profile-info{flex:1;padding-bottom:4px;min-width:0}
+.album-profile-name{font-size:15px;font-weight:700;color:#1a1916}
+.album-profile-bio{font-size:12px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.album-edit-btn{flex-shrink:0;padding:5px 12px;border:1px solid #ddd;border-radius:20px;background:#fff;font-size:12px;color:#333;cursor:pointer;align-self:flex-end;margin-bottom:4px}
+.album-edit-btn:hover{background:#f5f5f5}
+.album-grid-wrap{flex:1;overflow-y:auto;position:relative}
+.album-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.album-grid-cell{aspect-ratio:1;overflow:hidden;background:#f0f0f0;cursor:pointer;position:relative}
+.album-grid-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.2s}
+.album-grid-cell:hover img{transform:scale(1.05)}
+.album-add-post-btn{position:absolute;bottom:12px;right:12px;background:#6b4fd8;color:#fff;border:none;border-radius:50%;width:42px;height:42px;font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(107,79,216,0.4);display:flex;align-items:center;justify-content:center;z-index:5}
+.post-detail{flex:1;display:flex;flex-direction:column;background:#fff;overflow:hidden}
+.post-slides{position:relative;width:100%;aspect-ratio:1;background:#000;flex-shrink:0;overflow:hidden}
+.post-slides-inner{display:flex;height:100%;transition:transform 0.3s}
+.post-slide-img{min-width:100%;height:100%;object-fit:cover;display:block}
+.post-slide-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.35);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.post-slide-arrow.left{left:8px}
+.post-slide-arrow.right{right:8px}
+.post-slide-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
+.post-slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.55)}
+.post-slide-dot.active{background:#fff}
+.post-body{flex:1;overflow-y:auto;padding:12px 14px}
+.post-actions{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.post-action-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:0;line-height:1;transition:transform 0.15s}
+.post-action-btn:hover{transform:scale(1.2)}
+.post-action-count{font-size:12px;font-weight:600;color:#1a1916;margin-right:8px}
+.post-desc{font-size:13px;color:#1a1916;line-height:1.5;margin-bottom:10px}
+.post-comments{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.post-comment{font-size:12px;color:#1a1916;line-height:1.4}
+.post-comment-author{font-weight:700;margin-right:5px}
+.post-comment-reply-btn{font-size:11px;color:#888;cursor:pointer;margin-left:6px}
+.post-comment-reply-btn:hover{color:#6b4fd8}
+.post-reply{font-size:12px;color:#555;padding-left:14px;margin-top:3px;border-left:2px solid #e8e8e8}
+.post-comment-del{font-size:11px;color:#ccc;cursor:pointer;margin-left:4px}
+.post-comment-del:hover{color:#ef4444}
+.post-comment-input-row{display:flex;gap:6px;align-items:center;padding:8px 0 2px;border-top:1px solid #f0f0f0}
+.post-comment-input{flex:1;border:none;outline:none;font-size:13px;color:#1a1916;font-family:inherit;background:transparent}
+.post-comment-submit{background:none;border:none;color:#6b4fd8;font-size:13px;font-weight:700;cursor:pointer}
 
 </style>
 </head>
@@ -444,7 +511,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div id="phoneOverlay" class="phone-overlay" style="display:none" onclick="if(event.target===this)closePhone()">
   <div style="position:relative">
     <button class="phone-close-btn" onclick="closePhone()">✕</button>
-    <div class="phone-frame">
+    <div class="phone-frame" id="phoneFrame">
       <div class="phone-screen" id="phoneScreen"></div>
     </div>
   </div>
@@ -1750,14 +1817,16 @@ function setupTocDragEvents(wrapper) {
 // ══════════════════════════════════════════
 // 📱 핸드폰 기능
 // ══════════════════════════════════════════
-var phoneState = { screen: 'home', currentRoom: null };
+var phoneState = { screen: 'home', currentRoom: null, currentPost: null, postSlide: 0, replyingTo: null };
 
 function getPhoneData() {
   var char = charaverseDatabase[currentCreator].folders
     .find(function(f){ return f.name === currentFolder; }).characters
     .find(function(c){ return c.name === currentCharacter; });
-  if (!char.phone) char.phone = { bg: '', rooms: [] };
+  if (!char.phone) char.phone = { bg: '', rooms: [], album: { banner: '', avatar: '', name: '', bio: '', posts: [] } };
   if (!char.phone.rooms) char.phone.rooms = [];
+  if (!char.phone.album) char.phone.album = { banner: '', avatar: '', name: '', bio: '', posts: [] };
+  if (!char.phone.album.posts) char.phone.album.posts = [];
   return char.phone;
 }
 
@@ -1768,6 +1837,40 @@ function openPhone() {
 }
 function closePhone() {
   document.getElementById('phoneOverlay').style.display = 'none';
+}
+
+// ── 인라인 모달 (prompt/confirm 대체) ──
+function showPhoneModal(opts) {
+  // opts: { title, desc, input(bool), placeholder, confirmText, confirmClass, onConfirm, onCancel }
+  var frame = document.getElementById('phoneFrame');
+  var mo = document.createElement('div');
+  mo.className = 'phone-modal-overlay';
+  mo.id = 'phoneModalOverlay';
+  var inputHtml = opts.input ? '<input class="phone-modal-input" id="phoneModalInput" placeholder="' + (opts.placeholder||'') + '">' : '';
+  mo.innerHTML = '<div class="phone-modal-sheet">' +
+    '<div class="phone-modal-title">' + opts.title + '</div>' +
+    (opts.desc ? '<div class="phone-modal-desc">' + opts.desc + '</div>' : '') +
+    inputHtml +
+    '<button class="phone-modal-btn ' + (opts.confirmClass||'confirm') + '" id="phoneModalConfirm">' + (opts.confirmText||'확인') + '</button>' +
+    '<button class="phone-modal-btn cancel" id="phoneModalCancel">취소</button>' +
+  '</div>';
+  frame.appendChild(mo);
+  if (opts.input) document.getElementById('phoneModalInput').focus();
+  document.getElementById('phoneModalConfirm').onclick = function() {
+    var val = opts.input ? document.getElementById('phoneModalInput').value : null;
+    mo.remove();
+    if (opts.onConfirm) opts.onConfirm(val);
+  };
+  document.getElementById('phoneModalCancel').onclick = function() {
+    mo.remove();
+    if (opts.onCancel) opts.onCancel();
+  };
+}
+
+function fileToDataUrl(file, cb) {
+  var reader = new FileReader();
+  reader.onload = function(e) { cb(e.target.result); };
+  reader.readAsDataURL(file);
 }
 
 function renderPhone() {
@@ -1785,9 +1888,11 @@ function renderPhone() {
       '<div class="phone-home-time"><div class="ph-time">' + hm + '</div><div class="ph-date">' + dateStr + '</div></div>' +
       '<div class="phone-apps">' +
         '<div class="phone-app-icon phone-app-msg" onclick="phoneState.screen=\'msgList\';renderPhone()"><div class="icon-wrap">💬</div><div class="icon-label">메시지</div></div>' +
-        '<div class="phone-app-icon phone-app-album" onclick="alert(\'앨범은 곧 추가돼요!\')"><div class="icon-wrap">🖼️</div><div class="icon-label">앨범</div></div>' +
+        '<div class="phone-app-icon phone-app-album" onclick="phoneState.screen=\'album\';renderPhone()"><div class="icon-wrap">🖼️</div><div class="icon-label">앨범</div></div>' +
       '</div>' +
-      '<div class="phone-home-edit"><button onclick="phoneEditBg()">🖼️ 배경화면 변경</button></div>' +
+      '<div class="phone-home-edit">' +
+        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){getPhoneData().bg=ev.target.result;saveToFirebase();renderPhone();};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+      '</div>' +
     '</div>';
   } else if (phoneState.screen === 'msgList') {
     renderMsgList();
@@ -1795,6 +1900,14 @@ function renderPhone() {
     renderChatRoom();
   } else if (phoneState.screen === 'chatSettings') {
     renderChatSettings();
+  } else if (phoneState.screen === 'album') {
+    renderAlbum();
+  } else if (phoneState.screen === 'albumEdit') {
+    renderAlbumEdit();
+  } else if (phoneState.screen === 'post') {
+    renderPostDetail();
+  } else if (phoneState.screen === 'newPost') {
+    renderNewPost();
   }
 }
 
@@ -1808,13 +1921,14 @@ function renderMsgList() {
   }
   rooms.forEach(function(r, i) {
     var last = r.messages && r.messages.length > 0 ? r.messages[r.messages.length-1].text : '메시지 없음';
+    if (last && last.startsWith('data:image')) last = '📷 이미지';
     var avatarHtml = r.avatar ? '<img src="'+r.avatar+'">' : (r.emoji || '💬');
     roomsHtml += '<div class="msg-room-item">' +
       '<div style="display:flex;align-items:center;gap:12px;flex:1" onclick="phoneState.currentRoom='+i+';phoneState.screen=\'chat\';renderPhone()">' +
         '<div class="msg-room-avatar">' + avatarHtml + '</div>' +
         '<div class="msg-room-info"><div class="msg-room-name">' + (r.name||'채팅방') + '</div><div class="msg-room-preview">' + last + '</div></div>' +
       '</div>' +
-      '<div onclick="deleteRoom('+i+')" style="color:#ccc;font-size:16px;padding:4px 8px;cursor:pointer;flex-shrink:0" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'">🗑</div>' +
+      '<div onclick="deleteRoom('+i+')" style="color:#ccc;font-size:18px;padding:4px 8px;cursor:pointer;flex-shrink:0" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'">🗑</div>' +
     '</div>';
   });
   scr.innerHTML = '<div class="msg-app">' +
@@ -1839,14 +1953,20 @@ function renderChatRoom() {
 
   var msgsHtml = '';
   msgs.forEach(function(m, mi) {
+    // 날짜 구분선 마커
+    if (m._dateDivider) {
+      msgsHtml += '<div class="chat-date-divider" onclick="editDateDivider('+mi+')">' + (m.date||'') + '</div>';
+      return;
+    }
     var isMine = m.sender === participants[0];
     var senderAv = !isMine ? ('<div class="chat-msg-avatar">' + avatarHtml + '</div>') : '';
     var bubbleStyle = 'background:' + (isMine ? (theme.myColor||'#6b4fd8') : 'rgba(255,255,255,0.95)') + ';';
-    if (m.color && isMine) bubbleStyle += 'color:' + m.color + ';';
-    else if (!isMine && m.color) bubbleStyle += 'color:' + m.color + ';';
+    if (!isMine && m.color) bubbleStyle += 'color:' + m.color + ';';
     if (m.fontFamily) bubbleStyle += 'font-family:' + m.fontFamily + ';';
     var senderName = (!isMine && participants.length > 2) ? '<div class="chat-name-sender">' + m.sender + '</div>' : '';
-    var timeDelRow = '<div style="display:flex;flex-direction:column;align-items:' + (isMine?'flex-end':'flex-start') + ';gap:1px">' +
+    // 이미지 vs 텍스트
+    var bubbleContent = m.image ? '<img src="'+m.image+'" style="max-width:160px;border-radius:10px">' : m.text;
+    var metaHtml = '<div class="chat-msg-meta">' +
       '<span class="chat-msg-time">' + (m.time||'') + '</span>' +
       '<span class="chat-msg-del" onclick="deleteMsg('+mi+')">✕</span>' +
     '</div>';
@@ -1854,8 +1974,8 @@ function renderChatRoom() {
       (!isMine ? senderAv : '') +
       '<div>' + senderName +
         '<div style="display:flex;align-items:flex-end;gap:4px;' + (isMine?'flex-direction:row-reverse':'') + '">' +
-          '<div class="chat-msg-bubble" style="' + bubbleStyle + (isMine?'color:#fff':'') + '">' + m.text + '</div>' +
-          timeDelRow +
+          '<div class="chat-msg-bubble" style="' + bubbleStyle + (isMine?'color:#fff':'') + '">' + bubbleContent + '</div>' +
+          metaHtml +
         '</div>' +
       '</div>' +
     '</div>';
@@ -1882,6 +2002,8 @@ function renderChatRoom() {
           '<option value="Noto Serif KR">Noto Serif</option>' +
         '</select>' +
         '<input type="color" id="msgColor" value="#000000" title="글자색">' +
+        '<label class="img-upload-label">📷<input type="file" accept="image/*" style="display:none" onchange="sendImageMsg(event)"></label>' +
+        '<button style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#555;cursor:pointer" onclick="addDateDivider()" title="날짜 구분선">📅</button>' +
       '</div>' +
       '<div class="chat-input-row">' +
         '<textarea class="chat-input-box" id="chatInput" placeholder="메시지 입력..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>' +
@@ -1898,33 +2020,275 @@ function renderChatSettings() {
   var room = pd.rooms[phoneState.currentRoom];
   var theme = room.theme || { myColor: '#6b4fd8', bgColor: '#e8e8e8', sendBtnColor: '#6b4fd8' };
   var participants = (room.participants || ['나', '상대방']).join('\n');
+  var avatarPreview = room.avatar ? '<img src="'+room.avatar+'" class="settings-img-preview" id="sRoomAvatarPreview">' : '<img style="display:none" class="settings-img-preview" id="sRoomAvatarPreview">';
   scr.innerHTML = '<div class="msg-app">' +
     '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen=\'chat\';renderPhone()">←</button><span class="msg-header-title">채팅방 설정</span></div>' +
     '<div class="chat-settings-wrap">' +
-      '<div class="settings-row"><label>채팅방 이름</label><input id="sRoomName" value="'+(room.name||'')+'"></div>' +
-      '<div class="settings-row"><label>프로필 이모지</label><input id="sRoomEmoji" value="'+(room.emoji||'💬')+'"></div>' +
-      '<div class="settings-row"><label>프로필 이미지 URL</label><input id="sRoomAvatar" value="'+(room.avatar||'')+'" placeholder="https://..."></div>' +
-      '<div class="settings-row"><label>참여자 (한 줄에 한 명 / 첫 번째가 "나")</label><textarea id="sParticipants" rows="3">'+participants+'</textarea></div>' +
-      '<div class="settings-row"><label>내 말풍선 색</label><input type="color" id="sMyColor" value="'+(theme.myColor||'#6b4fd8')+'"></div>' +
-      '<div class="settings-row"><label>배경 색</label><input type="color" id="sBgColor" value="'+(theme.bgColor||'#e8e8e8')+'"></div>' +
-      '<div class="settings-row"><label>전송 버튼 색</label><input type="color" id="sSendColor" value="'+(theme.sendBtnColor||'#6b4fd8')+'"></div>' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">기본 정보</div>' +
+        '<div class="settings-row"><label>채팅방 이름</label><input id="sRoomName" value="'+(room.name||'')+'"></div>' +
+        '<div class="settings-row"><label>프로필 이모지</label><input id="sRoomEmoji" value="'+(room.emoji||'💬')+'"></div>' +
+        '<div class="settings-row"><label>프로필 이미지</label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpRoomAvatar=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          avatarPreview +
+        '</div>' +
+      '</div>' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">참여자</div>' +
+        '<div class="settings-row"><label>참여자 (한 줄에 한 명 / 첫 번째가 "나")</label><textarea id="sParticipants" rows="3">'+participants+'</textarea></div>' +
+      '</div>' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">색상</div>' +
+        '<div class="settings-row"><label>내 말풍선 색</label><input type="color" id="sMyColor" value="'+(theme.myColor||'#6b4fd8')+'"></div>' +
+        '<div class="settings-row"><label>배경 색</label><input type="color" id="sBgColor" value="'+(theme.bgColor||'#e8e8e8')+'"></div>' +
+        '<div class="settings-row"><label>전송 버튼 색</label><input type="color" id="sSendColor" value="'+(theme.sendBtnColor||'#6b4fd8')+'"></div>' +
+      '</div>' +
       '<button class="settings-save-btn" onclick="saveChatSettings()">저장</button>' +
     '</div>' +
   '</div>';
 }
 
-function addChatRoom() {
-  var name = prompt('채팅방 이름을 입력하세요');
-  if (!name) return;
+// ── 앨범 ──
+function renderAlbum() {
+  var scr = document.getElementById('phoneScreen');
   var pd = getPhoneData();
-  pd.rooms.push({ name: name, emoji: '💬', avatar: '', participants: ['나', '상대방'], messages: [], theme: { myColor: '#6b4fd8', bgColor: '#e8e8e8', sendBtnColor: '#6b4fd8' } });
-  saveToFirebase(); renderPhone();
+  var al = pd.album;
+  var bannerStyle = al.banner ? 'background-image:url("'+al.banner+'");' : '';
+  var avatarHtml = al.avatar ? '<img src="'+al.avatar+'">' : '🖼️';
+  var postsHtml = '';
+  (al.posts || []).forEach(function(p, i) {
+    var thumb = p.images && p.images[0] ? '<img src="'+p.images[0]+'">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:22px">📷</div>';
+    postsHtml += '<div class="album-grid-cell" onclick="phoneState.currentPost='+i+';phoneState.postSlide=0;phoneState.screen=\'post\';renderPhone()">' + thumb + '</div>';
+  });
+  scr.innerHTML = '<div class="album-app">' +
+    '<div class="msg-header">' +
+      '<button class="msg-back-btn" onclick="phoneState.screen=\'home\';renderPhone()">←</button>' +
+      '<span class="msg-header-title">앨범</span>' +
+    '</div>' +
+    '<div class="album-profile-banner" style="'+bannerStyle+'">' +
+    '</div>' +
+    '<div class="album-profile-row">' +
+      '<div class="album-avatar">' + avatarHtml + '</div>' +
+      '<div class="album-profile-info">' +
+        '<div class="album-profile-name">' + (al.name || '이름 없음') + '</div>' +
+        '<div class="album-profile-bio">' + (al.bio || '소개글을 입력해보세요') + '</div>' +
+      '</div>' +
+      '<button class="album-edit-btn" onclick="phoneState.screen=\'albumEdit\';renderPhone()">편집</button>' +
+    '</div>' +
+    '<div class="album-grid-wrap">' +
+      '<div class="album-grid">' + postsHtml + '</div>' +
+      '<button class="album-add-post-btn" onclick="phoneState.screen=\'newPost\';renderPhone()">＋</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderAlbumEdit() {
+  var scr = document.getElementById('phoneScreen');
+  var pd = getPhoneData();
+  var al = pd.album;
+  var bannerPreview = al.banner ? '<img src="'+al.banner+'" class="settings-img-preview" id="alBannerPreview">' : '<img style="display:none" class="settings-img-preview" id="alBannerPreview">';
+  var avatarPreview = al.avatar ? '<img src="'+al.avatar+'" class="settings-img-preview" id="alAvatarPreview">' : '<img style="display:none" class="settings-img-preview" id="alAvatarPreview">';
+  scr.innerHTML = '<div class="msg-app">' +
+    '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen=\'album\';renderPhone()">←</button><span class="msg-header-title">앨범 편집</span></div>' +
+    '<div class="chat-settings-wrap">' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">프로필</div>' +
+        '<div class="settings-row"><label>이름</label><input id="alName" value="'+(al.name||'')+'"></div>' +
+        '<div class="settings-row"><label>한마디</label><input id="alBio" value="'+(al.bio||'')+'"></div>' +
+        '<div class="settings-row"><label>프로필 사진</label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'alAvatarPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpAlAvatar=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          avatarPreview +
+        '</div>' +
+        '<div class="settings-row"><label>배너 이미지</label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'alBannerPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpAlBanner=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          bannerPreview +
+        '</div>' +
+      '</div>' +
+      '<button class="settings-save-btn" onclick="saveAlbumProfile()">저장</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function saveAlbumProfile() {
+  var pd = getPhoneData();
+  pd.album.name = document.getElementById('alName').value;
+  pd.album.bio = document.getElementById('alBio').value;
+  if (window._tmpAlAvatar) { pd.album.avatar = window._tmpAlAvatar; window._tmpAlAvatar = null; }
+  if (window._tmpAlBanner) { pd.album.banner = window._tmpAlBanner; window._tmpAlBanner = null; }
+  saveToFirebase(); phoneState.screen = 'album'; renderPhone();
+}
+
+function renderNewPost() {
+  var scr = document.getElementById('phoneScreen');
+  window._newPostImages = window._newPostImages || [];
+  var thumbs = window._newPostImages.map(function(src,i){
+    return '<div style="position:relative;display:inline-block;margin:2px"><img src="'+src+'" style="width:60px;height:60px;object-fit:cover;border-radius:6px"><span onclick="window._newPostImages.splice('+i+',1);renderNewPost()" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer">✕</span></div>';
+  }).join('');
+  scr.innerHTML = '<div class="msg-app">' +
+    '<div class="msg-header"><button class="msg-back-btn" onclick="window._newPostImages=[];phoneState.screen=\'album\';renderPhone()">←</button><span class="msg-header-title">새 게시물</span></div>' +
+    '<div class="chat-settings-wrap">' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">이미지</div>' +
+        '<label class="settings-file-label">📷 이미지 추가 (여러 장 가능)<input type="file" accept="image/*" multiple style="display:none" onchange="addNewPostImages(event)"></label>' +
+        '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">' + thumbs + '</div>' +
+      '</div>' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">내용</div>' +
+        '<div class="settings-row"><label>게시물 설명</label><textarea id="newPostDesc" rows="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;resize:none" placeholder="게시물 설명을 입력하세요..."></textarea></div>' +
+      '</div>' +
+      '<button class="settings-save-btn" onclick="submitNewPost()">게시하기</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function addNewPostImages(e) {
+  window._newPostImages = window._newPostImages || [];
+  var files = Array.from(e.target.files);
+  var remaining = files.length;
+  files.forEach(function(f) {
+    var r = new FileReader();
+    r.onload = function(ev) {
+      window._newPostImages.push(ev.target.result);
+      remaining--;
+      if (remaining === 0) renderNewPost();
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function submitNewPost() {
+  var desc = document.getElementById('newPostDesc').value;
+  var pd = getPhoneData();
+  pd.album.posts.unshift({ images: window._newPostImages || [], desc: desc, likes: 0, retweets: 0, liked: false, retweeted: false, comments: [] });
+  window._newPostImages = [];
+  saveToFirebase(); phoneState.screen = 'album'; renderPhone();
+}
+
+function renderPostDetail() {
+  var scr = document.getElementById('phoneScreen');
+  var pd = getPhoneData();
+  var post = pd.album.posts[phoneState.currentPost];
+  if (!post) { phoneState.screen = 'album'; renderPhone(); return; }
+  var images = post.images || [];
+  var slide = phoneState.postSlide || 0;
+  var slidesHtml = images.map(function(src){ return '<img class="post-slide-img" src="'+src+'">'; }).join('');
+  var dotsHtml = images.length > 1 ? images.map(function(_,i){ return '<div class="post-slide-dot'+(i===slide?' active':'')+'" onclick="phoneState.postSlide='+i+';document.getElementById(\'postSlidesInner\').style.transform=\'translateX(-'+i+'00%)\'"></div>'; }).join('') : '';
+  var arrowsHtml = '';
+  if (images.length > 1) {
+    arrowsHtml = (slide > 0 ? '<button class="post-slide-arrow left" onclick="phoneState.postSlide--;renderPostDetail()">‹</button>' : '') +
+      (slide < images.length-1 ? '<button class="post-slide-arrow right" onclick="phoneState.postSlide++;renderPostDetail()">›</button>' : '');
+  }
+  // 댓글
+  var commentsHtml = (post.comments || []).map(function(c, ci) {
+    var repliesHtml = (c.replies || []).map(function(rep, ri) {
+      return '<div class="post-reply"><span class="post-comment-author">'+rep.author+'</span>'+rep.text+'<span class="post-comment-del" onclick="deleteReply('+ci+','+ri+')">✕</span></div>';
+    }).join('');
+    return '<div class="post-comment">' +
+      '<span class="post-comment-author">'+c.author+'</span>'+c.text+
+      '<span class="post-comment-reply-btn" onclick="phoneState.replyingTo='+ci+';renderPostDetail()">답글</span>' +
+      '<span class="post-comment-del" onclick="deletePostComment('+ci+')">✕</span>' +
+      repliesHtml +
+    '</div>';
+  }).join('');
+  var replyingLabel = phoneState.replyingTo !== null ? '답글 입력 중 ('+((post.comments[phoneState.replyingTo]||{}).author||'?')+') <span onclick="phoneState.replyingTo=null;renderPostDetail()" style="cursor:pointer;color:#ef4444">✕</span>' : '';
+  scr.innerHTML = '<div class="post-detail">' +
+    '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen=\'album\';renderPhone()">←</button><span class="msg-header-title">게시물</span>' +
+      '<span onclick="deletePost()" style="font-size:12px;color:#ef4444;cursor:pointer;padding:4px 8px">삭제</span>' +
+    '</div>' +
+    (images.length > 0 ?
+      '<div class="post-slides"><div class="post-slides-inner" id="postSlidesInner" style="transform:translateX(-'+slide+'00%)">' + slidesHtml + '</div>' +
+      arrowsHtml + '<div class="post-slide-dots">'+dotsHtml+'</div></div>' : '') +
+    '<div class="post-body">' +
+      '<div class="post-actions">' +
+        '<button class="post-action-btn" onclick="togglePostLike()">'+(post.liked?'❤️':'🤍')+'</button>' +
+        '<span class="post-action-count">'+(post.likes||0)+'</span>' +
+        '<button class="post-action-btn" onclick="togglePostRetweet()">'+(post.retweeted?'🔁':'🔄')+'</button>' +
+        '<span class="post-action-count">'+(post.retweets||0)+'</span>' +
+        '<button class="post-action-btn">💬</button>' +
+        '<span class="post-action-count">'+(post.comments?post.comments.length:0)+'</span>' +
+      '</div>' +
+      '<div class="post-desc">' + (post.desc||'') + '</div>' +
+      '<div class="post-comments">' + commentsHtml + '</div>' +
+      (replyingLabel ? '<div style="font-size:11px;color:#888;margin-bottom:4px">'+replyingLabel+'</div>' : '') +
+      '<div class="post-comment-input-row">' +
+        '<input class="post-comment-input" id="postCommentAuthor" placeholder="이름"  style="width:60px;border-right:1px solid #eee;padding-right:8px;margin-right:8px">' +
+        '<input class="post-comment-input" id="postCommentText" placeholder="댓글 추가...">' +
+        '<button class="post-comment-submit" onclick="addPostComment()">게시</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function togglePostLike() {
+  var pd = getPhoneData();
+  var post = pd.album.posts[phoneState.currentPost];
+  post.liked = !post.liked;
+  post.likes = (post.likes||0) + (post.liked ? 1 : -1);
+  if (post.likes < 0) post.likes = 0;
+  saveToFirebase(); renderPostDetail();
+}
+function togglePostRetweet() {
+  var pd = getPhoneData();
+  var post = pd.album.posts[phoneState.currentPost];
+  post.retweeted = !post.retweeted;
+  post.retweets = (post.retweets||0) + (post.retweeted ? 1 : -1);
+  if (post.retweets < 0) post.retweets = 0;
+  saveToFirebase(); renderPostDetail();
+}
+function addPostComment() {
+  var author = document.getElementById('postCommentAuthor').value.trim() || '익명';
+  var text = document.getElementById('postCommentText').value.trim();
+  if (!text) return;
+  var pd = getPhoneData();
+  var post = pd.album.posts[phoneState.currentPost];
+  if (!post.comments) post.comments = [];
+  if (phoneState.replyingTo !== null && post.comments[phoneState.replyingTo]) {
+    if (!post.comments[phoneState.replyingTo].replies) post.comments[phoneState.replyingTo].replies = [];
+    post.comments[phoneState.replyingTo].replies.push({ author: author, text: text });
+    phoneState.replyingTo = null;
+  } else {
+    post.comments.push({ author: author, text: text, replies: [] });
+  }
+  saveToFirebase(); renderPostDetail();
+}
+function deletePostComment(ci) {
+  var pd = getPhoneData();
+  pd.album.posts[phoneState.currentPost].comments.splice(ci, 1);
+  saveToFirebase(); renderPostDetail();
+}
+function deleteReply(ci, ri) {
+  var pd = getPhoneData();
+  pd.album.posts[phoneState.currentPost].comments[ci].replies.splice(ri, 1);
+  saveToFirebase(); renderPostDetail();
+}
+function deletePost() {
+  showPhoneModal({ title: '게시물 삭제', desc: '이 게시물을 삭제할까요?', confirmText: '삭제', confirmClass: 'danger',
+    onConfirm: function() {
+      var pd = getPhoneData();
+      pd.album.posts.splice(phoneState.currentPost, 1);
+      saveToFirebase(); phoneState.screen = 'album'; renderPhone();
+    }
+  });
+}
+
+function addChatRoom() {
+  showPhoneModal({ title: '새 채팅방', input: true, placeholder: '채팅방 이름을 입력하세요', confirmText: '만들기',
+    onConfirm: function(name) {
+      if (!name || !name.trim()) return;
+      var pd = getPhoneData();
+      pd.rooms.push({ name: name.trim(), emoji: '💬', avatar: '', participants: ['나', '상대방'], messages: [], theme: { myColor: '#6b4fd8', bgColor: '#e8e8e8', sendBtnColor: '#6b4fd8' } });
+      saveToFirebase(); renderPhone();
+    }
+  });
 }
 function deleteRoom(i) {
-  if (!confirm('이 채팅방을 삭제할까요?')) return;
-  var pd = getPhoneData();
-  pd.rooms.splice(i, 1);
-  saveToFirebase(); renderPhone();
+  showPhoneModal({ title: '채팅방 삭제', desc: '이 채팅방을 삭제할까요?', confirmText: '삭제', confirmClass: 'danger',
+    onConfirm: function() {
+      var pd = getPhoneData();
+      pd.rooms.splice(i, 1);
+      saveToFirebase(); renderPhone();
+    }
+  });
 }
 function sendMsg() {
   var input = document.getElementById('chatInput');
@@ -1942,28 +2306,66 @@ function sendMsg() {
   input.value = '';
   saveToFirebase(); renderChatRoom();
 }
-function deleteMsg(i) {
-  if (!confirm('이 메시지를 삭제할까요?')) return;
+function sendImageMsg(e) {
+  if (!e.target.files[0]) return;
+  var sender = document.getElementById('msgSender');
+  var now = new Date();
+  var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  var r = new FileReader();
+  r.onload = function(ev) {
+    var pd = getPhoneData();
+    var room = pd.rooms[phoneState.currentRoom];
+    if (!room.messages) room.messages = [];
+    room.messages.push({ image: ev.target.result, text: '', sender: sender ? sender.value : '나', time: time });
+    saveToFirebase(); renderChatRoom();
+  };
+  r.readAsDataURL(e.target.files[0]);
+}
+function addDateDivider() {
+  var now = new Date();
+  var defaultDate = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일';
+  showPhoneModal({ title: '날짜 구분선', input: true, placeholder: defaultDate, confirmText: '추가',
+    onConfirm: function(val) {
+      var date = (val && val.trim()) ? val.trim() : defaultDate;
+      var pd = getPhoneData();
+      var room = pd.rooms[phoneState.currentRoom];
+      if (!room.messages) room.messages = [];
+      // 다음 메시지에 날짜가 붙도록 마커 역할 메시지 추가
+      room.messages.push({ _dateDivider: true, date: date, sender: '__date__', text: '', time: '' });
+      saveToFirebase(); renderChatRoom();
+    }
+  });
+}
+function editDateDivider(mi) {
   var pd = getPhoneData();
-  pd.rooms[phoneState.currentRoom].messages.splice(i, 1);
-  saveToFirebase(); renderChatRoom();
+  var room = pd.rooms[phoneState.currentRoom];
+  var msg = room.messages[mi];
+  if (!msg || !msg._dateDivider) return;
+  showPhoneModal({ title: '날짜 수정', input: true, placeholder: msg.date, confirmText: '저장',
+    onConfirm: function(val) {
+      if (val && val.trim()) msg.date = val.trim();
+      saveToFirebase(); renderChatRoom();
+    }
+  });
+}
+function deleteMsg(i) {
+  showPhoneModal({ title: '메시지 삭제', desc: '이 메시지를 삭제할까요?', confirmText: '삭제', confirmClass: 'danger',
+    onConfirm: function() {
+      var pd = getPhoneData();
+      pd.rooms[phoneState.currentRoom].messages.splice(i, 1);
+      saveToFirebase(); renderChatRoom();
+    }
+  });
 }
 function saveChatSettings() {
   var pd = getPhoneData();
   var room = pd.rooms[phoneState.currentRoom];
   room.name = document.getElementById('sRoomName').value;
   room.emoji = document.getElementById('sRoomEmoji').value;
-  room.avatar = document.getElementById('sRoomAvatar').value;
+  if (window._tmpRoomAvatar) { room.avatar = window._tmpRoomAvatar; window._tmpRoomAvatar = null; }
   room.participants = document.getElementById('sParticipants').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
   room.theme = { myColor: document.getElementById('sMyColor').value, bgColor: document.getElementById('sBgColor').value, sendBtnColor: document.getElementById('sSendColor').value };
   saveToFirebase(); phoneState.screen = 'chat'; renderPhone();
-}
-function phoneEditBg() {
-  var url = prompt('배경화면 이미지 URL (비워두면 기본 배경)');
-  if (url === null) return;
-  var pd = getPhoneData();
-  pd.bg = url;
-  saveToFirebase(); renderPhone();
 }
 
 </script>
