@@ -604,13 +604,28 @@ _dbRef.on('value', function(snapshot) {
     updateNavbar();
     return;
   }
-  // 내가 저장한 직후 2000ms 이내면 Firebase 수신 데이터로 덮어쓰기 완전 차단
+  // 내가 저장한 직후 5000ms 이내면 Firebase 수신 데이터로 덮어쓰기 완전 차단
   var now = Date.now();
-  if (now - _lastSaveTime < 2000) return;
+  if (now - _lastSaveTime < 5000) return;
   // 편집 모드 중이거나 드래그 중에는 데이터/렌더 모두 차단
   if (isCharacterEditMode || _relDragging) return;
-  // 그 외 경우만 데이터 갱신 + 렌더
-  if (data) { charaverseDatabase = data; }
+  // 캐릭터 뷰에서는 현재 보고 있는 캐릭터 데이터를 DOM에서 먼저 sync한 뒤 병합
+  // (다른 사람이 다른 캐릭터를 수정한 경우엔 반영, 내가 보는 캐릭터는 내 DOM 우선)
+  if (data) {
+    if (currentView === 'character' && currentCreator && currentFolder && currentCharacter) {
+      syncAllSectionDataFromDOM();
+      // 내 현재 캐릭터 데이터를 임시 보관
+      var myCreatorData = JSON.parse(JSON.stringify(charaverseDatabase[currentCreator] || {}));
+      // Firebase 데이터로 전체 교체
+      charaverseDatabase = data;
+      // 내가 보고 있는 창작자 데이터만 내 버전으로 복원 (내 편집 보호)
+      if (myCreatorData && Object.keys(myCreatorData).length > 0) {
+        charaverseDatabase[currentCreator] = myCreatorData;
+      }
+    } else {
+      charaverseDatabase = data;
+    }
+  }
   if (currentView === 'main') renderCircleCreatorGrid();
   else if (currentView === 'creator') renderCreatorProfilePage();
   else if (currentView === 'folder') renderFolderContentPage();
@@ -1862,6 +1877,8 @@ function toggleCharacterEditMode() {
       viewport.querySelectorAll('.rel-node-text-label').forEach(el => el.setAttribute('contenteditable','false'));
     }
     saveCreatorToFirebase(currentCreator);
+    // 저장 직후 렌더 중 Firebase 덮어쓰기 차단 (타이밍 보호)
+    _lastSaveTime = Date.now();
     // renderCharacterDocument 호출 시 관계도 재초기화 건너뜀 (위치 보존)
     window._skipRelInit = true;
     renderCharacterDocument();
