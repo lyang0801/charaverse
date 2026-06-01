@@ -508,7 +508,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
             <span>크기</span>
             <select id="toolbarFontSize" style="padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:var(--white);color:var(--text)"
               onchange="applyFontSizeToSelection(this.value)">
-              <option value="">기본</option>
+              <option value="">선택</option>
               <option value="11px">11</option>
               <option value="12px">12</option>
               <option value="13px">13</option>
@@ -519,6 +519,20 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
               <option value="24px">24</option>
               <option value="28px">28</option>
               <option value="32px">32</option>
+            </select>
+          </div>
+          <div class="color-picker-wrapper" style="margin-left:0; padding-left:6px; border-left:1px solid var(--border)">
+            <span>기본크기</span>
+            <select id="toolbarBaseFontSize" style="padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:var(--white);color:var(--text)"
+              onchange="applyBaseBlockFontSize(this.value)">
+              <option value="">기본</option>
+              <option value="12px">12</option>
+              <option value="13px">13</option>
+              <option value="14px">14</option>
+              <option value="15px">15</option>
+              <option value="16px">16</option>
+              <option value="17px">17</option>
+              <option value="18px">18</option>
             </select>
           </div>
           <button style="color:#dc2626" onclick="deleteCurrentCharacter()">❌ 제명</button>
@@ -770,6 +784,20 @@ function applyFontSizeToSelection(size) {
   sel.removeAllRanges();
   // 크기 선택 리셋
   setTimeout(function(){ var s = document.getElementById('toolbarFontSize'); if(s) s.value=''; }, 50);
+}
+
+function applyBaseBlockFontSize(size) {
+  if(!currentCreator || !currentFolder || !currentCharacter) return;
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  char.baseFontSize = size || '';
+  // 현재 열려 있는 모든 prose 블록에 즉시 적용
+  document.querySelectorAll('.wiki-editable-block').forEach(function(b){
+    b.style.fontSize = size || '';
+  });
+  // 셀렉터 값 동기화
+  var sel = document.getElementById('toolbarBaseFontSize');
+  if(sel) sel.value = size || '';
+  saveCreatorToFirebase(currentCreator);
 }
 
 function applyFontColorToSelection(color) {
@@ -1793,6 +1821,8 @@ function renderCharacterDocument() {
           <th class="wiki-editable-th-cell" data-secid="${sec.id}" data-index="${rIdx}" style="position:relative;">${row.k}</th>
           <td class="wiki-editable-cell" data-secid="${sec.id}" data-index="${rIdx}">${row.v}</td>
           <td class="row-control-btn-wrap" style="display:none; width:1%; white-space:nowrap; padding:4px 6px; background:var(--surface); border-left:1px solid var(--border);">
+             <button class="row-ctrl-badge" onclick="moveTableRow('${sec.id}', ${rIdx}, -1)" style="color:var(--accent);border-color:var(--accent)" title="위로 이동">↑</button>
+             <button class="row-ctrl-badge" onclick="moveTableRow('${sec.id}', ${rIdx}, 1)" style="color:var(--accent);border-color:var(--accent)" title="아래로 이동">↓</button>
              <button class="row-ctrl-badge add" onclick="insertNewTableRowInlineFromNode('${sec.id}', ${rIdx})">➕ 행</button>
              <button class="row-ctrl-badge del" onclick="deleteTableRowInlineFromNode('${sec.id}', ${rIdx})">❌</button>
           </td>
@@ -1827,6 +1857,7 @@ function renderCharacterDocument() {
       const pBox = document.createElement('div');
       var _savedFont = (char && char.fontClass) ? char.fontClass : globalSelectedFontClass;
       pBox.className = "prose wiki-editable-block " + _savedFont; pBox.id = `editableBlock-${sec.id}`;
+      if(char.baseFontSize) pBox.style.fontSize = char.baseFontSize;
       pBox.innerHTML = sec.data; container.appendChild(pBox);
 
       // 마크다운 숏컷 실시간 단축키 타이핑 감지 리스너 바인딩
@@ -2008,12 +2039,16 @@ function insertNewTableRowInlineFromNode(secId, index) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   sec.data.splice(index + 1, 0, { k: "새 명세명", v: "내용 기입" });
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true; renderCharacterDocument();
-    setTimeout(function(){ document.body.classList.add('edit-mode-active'); document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); }); }, 60);
-  });
+  // 즉시 DOM 재렌더 (Firebase 응답 대기 없음)
+  isCharacterEditMode = true;
+  renderCharacterDocument();
+  setTimeout(function(){
+    document.body.classList.add('edit-mode-active');
+    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
+    document.querySelectorAll('.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
+  }, 30);
+  // 비동기 백그라운드 저장 (실패해도 화면은 이미 업데이트됨)
+  saveCreatorToFirebase(currentCreator);
 }
 function deleteTableRowInlineFromNode(secId, index) {
   syncAllSectionDataFromDOM();
@@ -2022,12 +2057,34 @@ function deleteTableRowInlineFromNode(secId, index) {
   const sec = char.sections.find(s => s.id === secId);
   if(sec.data.length <= 1) return alert('명세는 최소 1개 이상 존재해야 합니다.');
   sec.data.splice(index, 1);
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true; renderCharacterDocument();
-    setTimeout(function(){ document.body.classList.add('edit-mode-active'); document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); }); }, 60);
-  });
+  isCharacterEditMode = true;
+  renderCharacterDocument();
+  setTimeout(function(){
+    document.body.classList.add('edit-mode-active');
+    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
+    document.querySelectorAll('.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
+  }, 30);
+  saveCreatorToFirebase(currentCreator);
+}
+
+function moveTableRow(secId, index, dir) {
+  syncAllSectionDataFromDOM();
+  syncTableDataFromDOM(secId);
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const sec = char.sections.find(s => s.id === secId);
+  const targetIdx = index + dir;
+  if(targetIdx < 0 || targetIdx >= sec.data.length) return;
+  const tmp = sec.data[index];
+  sec.data[index] = sec.data[targetIdx];
+  sec.data[targetIdx] = tmp;
+  isCharacterEditMode = true;
+  renderCharacterDocument();
+  setTimeout(function(){
+    document.body.classList.add('edit-mode-active');
+    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
+    document.querySelectorAll('.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
+  }, 30);
+  saveCreatorToFirebase(currentCreator);
 }
 
 function toggleCharacterEditMode() {
@@ -2050,6 +2107,12 @@ function toggleCharacterEditMode() {
     toolbar.style.display = 'flex'; tocAddBtn.style.display = 'block';
     if(sizePanel) sizePanel.style.display = 'flex';
     if(coverControl) coverControl.style.display = 'flex';
+    // baseFontSize 셀렉터 복원
+    var _bfsSel = document.getElementById('toolbarBaseFontSize');
+    if(_bfsSel && currentCreator && currentFolder && currentCharacter) {
+      var _bfsChar = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
+      if(_bfsChar) _bfsSel.value = _bfsChar.baseFontSize || '';
+    }
     // relToolbar는 renderCharacterDocument가 재실행될 때 새로 생성되므로 매번 다시 조회
     const relToolbarNow = document.getElementById('relToolbarWrapperContainer');
     if(relToolbarNow) relToolbarNow.style.display = 'flex';
