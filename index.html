@@ -129,12 +129,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .prose{font-size:14px;color:var(--text);line-height:1.8;min-height:40px;padding:8px;border-radius:6px}
 /* 본문 인라인 이미지 삭제 버튼: 기본 숨김, 편집 모드에서만 표시 */
 .inline-img-del-btn { display:none !important; }
-/* 명언 블록 삭제 버튼 편집 모드에서만 표시 */
-.quote-del-btn { display:none !important; }
-.edit-mode-active .quote-del-btn { display:block !important; }
-
-.phone-app-music .icon-wrap { background:linear-gradient(135deg,#1a1a2e,#6b4fd8); }
-
 .edit-mode-active .inline-img-del-btn { display:inline-block !important; }
 .edit-mode-active .inline-img-wrap img { outline:2px dashed transparent; transition:outline 0.15s; }
 .edit-mode-active .inline-img-wrap img:hover { outline:2px dashed var(--accent); }
@@ -488,10 +482,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
           <div class="color-picker-wrapper">
             <span>글자색</span>
-            <input type="color" class="color-input" id="toolbarColorPicker" oninput="document.getElementById('toolbarColorHex').value=this.value; document.execCommand('foreColor',false,this.value)">
-            <input type="text" id="toolbarColorHex" placeholder="#000000" maxlength="7"
-              style="width:72px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:var(--white);color:var(--text)"
-              oninput="var v=this.value; if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('toolbarColorPicker').value=v; document.execCommand('foreColor',false,v);}">
+            <input type="color" class="color-input" oninput="document.execCommand('foreColor', false, this.value)">
           </div>
 
           <span style="color:var(--border2); margin:0 4px">|</span>
@@ -499,28 +490,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <button style="color:#1a6fd8; font-weight:bold" onclick="insertLinkToEditor()">🔗 링크</button>
           <button style="color:var(--accent); font-weight:bold" onclick="openCustomTableInsertPopupModal()">📊 자유 표 삽입</button>
           <button style="color:var(--accent); font-weight:bold" onclick="executeWikiFootnoteSystemStamp()">📌 [내용 각주]</button>
-          <button style="color:#e066ff; font-weight:bold" onclick="openQuoteBlockInsertModal()">💬 명언 블록</button>
           
           <button style="color:#e066ff; font-weight:bold" onclick="insertSpoilerBlindTemplateToEditor()">👁️ 스포일러 가림막</button>
           <button style="color:#1a8a72; font-weight:bold" id="radarToggleControlTriggerBtn" onclick="toggleRadarChartBuildVisiblity()">📊 스탯 차트 활성화</button>
           
-          <div class="color-picker-wrapper" style="margin-left:0; padding-left:6px; border-left:1px solid var(--border)">
-            <span>크기</span>
-            <select id="toolbarFontSize" style="padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:var(--white);color:var(--text)"
-              onchange="applyFontSizeToSelection(this.value)">
-              <option value="">기본</option>
-              <option value="11px">11</option>
-              <option value="12px">12</option>
-              <option value="13px">13</option>
-              <option value="14px">14</option>
-              <option value="16px">16</option>
-              <option value="18px">18</option>
-              <option value="20px">20</option>
-              <option value="24px">24</option>
-              <option value="28px">28</option>
-              <option value="32px">32</option>
-            </select>
-          </div>
           <button style="color:#dc2626" onclick="deleteCurrentCharacter()">❌ 제명</button>
         </div>
 
@@ -736,37 +709,7 @@ window.deleteCharacterCard = function(charName) {
 function changeGlobalTheme(val) { document.documentElement.setAttribute('data-theme', val); }
 function changeGlobalFontLayoutEngine(fontClass) {
   globalSelectedFontClass = fontClass;
-  // 재렌더 없이 현재 prose 블록에만 폰트 클래스 교체 (selection 유지)
-  const fontClasses = ['canvas-font-notosans','canvas-font-gowun','canvas-font-nanum','canvas-font-notoserif'];
-  document.querySelectorAll('.wiki-editable-block').forEach(function(b) {
-    fontClasses.forEach(function(c) { b.classList.remove(c); });
-    b.classList.add(fontClass);
-  });
-  // char 데이터에도 폰트 저장 (새로고침 후에도 유지)
-  if(currentCreator && currentFolder && currentCharacter) {
-    var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
-    if(char) char.fontClass = fontClass;
-    saveCreatorToFirebase(currentCreator);
-  }
-}
-
-function applyFontSizeToSelection(size) {
-  if(!size) return;
-  // savedSelectionRange 복원 후 span으로 감싸기
-  var sel = window.getSelection();
-  if(savedSelectionRange) { try { sel.removeAllRanges(); sel.addRange(savedSelectionRange); } catch(e){} }
-  if(!sel.rangeCount || sel.isCollapsed) return;
-  var range = sel.getRangeAt(0);
-  var span = document.createElement('span');
-  span.style.fontSize = size;
-  try { range.surroundContents(span); } catch(e) {
-    // surroundContents 실패 시 (부분 선택 등) extractContents 방식
-    var frag = range.extractContents();
-    span.appendChild(frag); range.insertNode(span);
-  }
-  sel.removeAllRanges();
-  // 크기 선택 리셋
-  setTimeout(function(){ var s = document.getElementById('toolbarFontSize'); if(s) s.value=''; }, 50);
+  renderCharacterDocument();
 }
 
 function updateNavbar() {
@@ -1551,31 +1494,12 @@ function drawRelationshipArrowsSvg(rel) {
     svg.querySelector('defs').innerHTML += `
       <marker id="${markerId}" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
         <path d="M0,0 L0,6 L6,3 Z" fill="${ed.color || '#a09e96'}" />
-      </marker>
-      <marker id="${markerId}-start" markerWidth="8" markerHeight="8" refX="1" refY="3" orient="auto-start-reverse">
-        <path d="M0,0 L0,6 L6,3 Z" fill="${ed.color || '#a09e96'}" />
       </marker>`;
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathD); path.setAttribute("stroke", ed.color || "var(--border2)");
     path.setAttribute("stroke-width", "2.5"); path.setAttribute("fill", "none");
-    path.setAttribute("marker-end", `url(#${markerId})`);
-    // 양방향 화살표
-    if(ed.bidirectional) path.setAttribute("marker-start", `url(#${markerId}-start)`);
-    // 편집 모드에서 선 클릭 → 수정 팝업
-    const edIdx = rel.edges.indexOf(ed);
-    path.style.cursor = isCharacterEditMode ? 'pointer' : 'default';
-    path.setAttribute("stroke-linecap","round");
-    // 클릭 영역 넓히는 투명 path
-    const hitPath = document.createElementNS("http://www.w3.org/2000/svg","path");
-    hitPath.setAttribute("d", pathD); hitPath.setAttribute("stroke","transparent");
-    hitPath.setAttribute("stroke-width","16"); hitPath.setAttribute("fill","none");
-    hitPath.style.cursor = isCharacterEditMode ? 'pointer' : 'default';
-    if(isCharacterEditMode) {
-      hitPath.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openEdgeEditPopup(edIdx); });
-      path.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openEdgeEditPopup(edIdx); });
-    }
-    svg.appendChild(path); svg.appendChild(hitPath);
+    path.setAttribute("marker-end", `url(#${markerId})`); svg.appendChild(path);
 
     const tEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
     tEl.setAttribute("x", textX); tEl.setAttribute("y", textY);
@@ -1788,8 +1712,7 @@ function renderCharacterDocument() {
     } 
     else if(sec.type === 'text') {
       const pBox = document.createElement('div');
-      var _savedFont = (char && char.fontClass) ? char.fontClass : globalSelectedFontClass;
-      pBox.className = "prose wiki-editable-block " + _savedFont; pBox.id = `editableBlock-${sec.id}`;
+      pBox.className = "prose wiki-editable-block"; pBox.id = `editableBlock-${sec.id}`;
       pBox.innerHTML = sec.data; container.appendChild(pBox);
 
       // 마크다운 숏컷 실시간 단축키 타이핑 감지 리스너 바인딩
@@ -1860,21 +1783,7 @@ function openIntegratedArrowLinkModal() {
       <div class="form-group"><label class="form-label">출발지 인물</label><select id="modalEdgeFrom" class="form-select">${fromOptions}</select></div>
       <div class="form-group"><label class="form-label">도착지 인물</label><select id="modalEdgeTo" class="form-select">${fromOptions}</select></div>
       <div class="form-group"><label class="form-label">관계 내용 타이틀</label><input type="text" id="modalEdgeText" class="form-input" placeholder="예: 라이벌"></div>
-      <div class="form-group">
-        <label class="form-label">화살표 선 색상</label>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input type="color" id="modalEdgeCustomColorPicker" value="#6b4fd8" style="width:44px;height:36px;border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer">
-          <input type="text" id="modalEdgeColorHex" placeholder="#6b4fd8" maxlength="7" value="#6b4fd8"
-            style="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)"
-            oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('modalEdgeCustomColorPicker').value=v;}">
-        </div>
-      </div>
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)">
-          <input type="checkbox" id="modalEdgeBidir" style="width:16px;height:16px;accent-color:var(--accent)">
-          <span>양방향 화살표 (↔)</span>
-        </label>
-      </div>
+      <div class="form-group"><label class="form-label">화살표 선 색상</label><input type="color" id="modalEdgeCustomColorPicker" class="form-input" value="#6b4fd8" style="height:44px; padding:2px"></div>
     </div>
     <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitIntegratedEdgeArrowLink()">연결 완료</button></div>`;
   document.getElementById('globalModalOverlay').style.display = "flex";
@@ -1885,61 +1794,11 @@ function submitIntegratedEdgeArrowLink() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   if(!char.relationships) char.relationships = { nodes: [], edges: [] };
   if(!char.relationships.edges) char.relationships.edges = [];
-  var hexInput = document.getElementById('modalEdgeColorHex');
-  var colorVal = (hexInput && /^#[0-9a-fA-F]{6}$/.test(hexInput.value)) ? hexInput.value : document.getElementById('modalEdgeCustomColorPicker').value;
-  var bidir = document.getElementById('modalEdgeBidir') && document.getElementById('modalEdgeBidir').checked;
   char.relationships.edges.push({
     from: from, to: to, text: document.getElementById('modalEdgeText').value.trim() || "관계",
-    color: colorVal, bidirectional: bidir
+    color: document.getElementById('modalEdgeCustomColorPicker').value
   });
   saveToFirebase(); closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
-}
-
-function openEdgeEditPopup(edIdx) {
-  var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
-  if(!char.relationships || !char.relationships.edges) return;
-  var ed = char.relationships.edges[edIdx]; if(!ed) return;
-  var rel = char.relationships;
-  var nodeOpts = rel.nodes.map(function(n){ return '<option value="'+n.id+'"'+( )+'>' + n.name + '</option>'; }).join('');
-  var fromOpts = rel.nodes.map(function(n){ return '<option value="'+n.id+'"'+(n.id===ed.from?' selected':'')+'>'+n.name+'</option>'; }).join('');
-  var toOpts   = rel.nodes.map(function(n){ return '<option value="'+n.id+'"'+(n.id===ed.to  ?' selected':'')+'>'+n.name+'</option>'; }).join('');
-  var modal = document.getElementById('modalWindowContent');
-  modal.innerHTML = '<div class="modal-title">관계선 수정</div>' +
-    '<div class="modal-body-form">' +
-      '<div class="form-group"><label class="form-label">출발 인물</label><select id="editEdgeFrom" class="form-select">' + fromOpts + '</select></div>' +
-      '<div class="form-group"><label class="form-label">도착 인물</label><select id="editEdgeTo" class="form-select">' + toOpts + '</select></div>' +
-      '<div class="form-group"><label class="form-label">관계 내용</label><input type="text" id="editEdgeText" class="form-input" value="' + (ed.text||'') + '"></div>' +
-      '<div class="form-group"><label class="form-label">선 색상</label>' +
-        '<div style="display:flex;align-items:center;gap:10px">' +
-          '<input type="color" id="editEdgeColorPicker" value="' + (ed.color||'#6b4fd8') + '" style="width:44px;height:36px;border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer" oninput="document.getElementById('editEdgeColorHex').value=this.value">' +
-          '<input type="text" id="editEdgeColorHex" value="' + (ed.color||'#6b4fd8') + '" maxlength="7" placeholder="#6b4fd8" style="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)" oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('editEdgeColorPicker').value=v;}">' +
-        '</div>' +
-      '</div>' +
-      '<div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="editEdgeBidir"'+(ed.bidirectional?' checked':'')+' style="width:16px;height:16px;accent-color:var(--accent)"><span>양방향 화살표 (↔)</span></label></div>' +
-    '</div>' +
-    '<div class="modal-footer">' +
-      '<button class="btn" style="border-color:#fca5a5;color:#dc2626" onclick="deleteEdgeFromPopup('+edIdx+')">🗑 삭제</button>' +
-      '<button class="btn" onclick="closeGlobalModal()">취소</button>' +
-      '<button class="btn primary" onclick="saveEdgeFromPopup('+edIdx+')">저장</button>' +
-    '</div>';
-  document.getElementById('globalModalOverlay').style.display = 'flex';
-}
-function saveEdgeFromPopup(edIdx) {
-  var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
-  var ed = char.relationships.edges[edIdx]; if(!ed) return;
-  var hexInput = document.getElementById('editEdgeColorHex');
-  var colorVal = (hexInput && /^#[0-9a-fA-F]{6}$/.test(hexInput.value)) ? hexInput.value : document.getElementById('editEdgeColorPicker').value;
-  ed.from = document.getElementById('editEdgeFrom').value;
-  ed.to   = document.getElementById('editEdgeTo').value;
-  ed.text = document.getElementById('editEdgeText').value.trim() || '관계';
-  ed.color = colorVal;
-  ed.bidirectional = document.getElementById('editEdgeBidir').checked;
-  closeGlobalModal(); saveToFirebase(); initInteractiveCanvasEngine(char.relationships);
-}
-function deleteEdgeFromPopup(edIdx) {
-  var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
-  char.relationships.edges.splice(edIdx, 1);
-  closeGlobalModal(); saveToFirebase(); initInteractiveCanvasEngine(char.relationships);
 }
 
 function syncTableDataFromDOM(secId) {
@@ -1959,12 +1818,7 @@ function insertNewTableRowInlineFromNode(secId, index) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   sec.data.splice(index + 1, 0, { k: "새 명세명", v: "내용 기입" });
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true; renderCharacterDocument();
-    setTimeout(function(){ document.body.classList.add('edit-mode-active'); document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); }); }, 60);
-  });
+  saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteTableRowInlineFromNode(secId, index) {
   syncAllSectionDataFromDOM();
@@ -1973,12 +1827,7 @@ function deleteTableRowInlineFromNode(secId, index) {
   const sec = char.sections.find(s => s.id === secId);
   if(sec.data.length <= 1) return alert('명세는 최소 1개 이상 존재해야 합니다.');
   sec.data.splice(index, 1);
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true; renderCharacterDocument();
-    setTimeout(function(){ document.body.classList.add('edit-mode-active'); document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); }); }, 60);
-  });
+  saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 
 function toggleCharacterEditMode() {
@@ -2113,7 +1962,6 @@ function syncAllSectionDataFromDOM() {
   char.sections.forEach(sec => {
     if (sec.type === 'text') {
       const node = document.getElementById(`editableBlock-${sec.id}`);
-      // DOM에 해당 블록이 존재할 때만 덮어씀 (새로 추가된 섹션은 기존 data 보존)
       if (node) sec.data = node.innerHTML;
     } else if (sec.type === 'table') {
       const ths = document.querySelectorAll(`.wiki-editable-th-cell[data-secid="${sec.id}"]`);
@@ -2121,7 +1969,6 @@ function syncAllSectionDataFromDOM() {
       let arr = [];
       ths.forEach((th, idx) => { arr.push({ k: th.innerHTML, v: tds[idx] ? tds[idx].innerHTML : '' }); });
       if (arr.length > 0) sec.data = arr;
-      // table도 DOM 없으면 보존
     }
   });
 }
@@ -2140,34 +1987,8 @@ function submitAddNewTocFromModal() {
   const title = document.getElementById('modalNewTocTitle').value.trim(); if(!title) return;
   syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-  const newSecId = "sec-" + Date.now();
-  char.sections.push({ id: newSecId, title: title, type: "text", data: "이곳에 설정을 기술하세요." });
-  closeGlobalModal();
-  // 저장 완료 후 재렌더 (race condition 방지)
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true; // 재렌더 후 편집모드 유지를 위해 미리 true
-    renderCharacterDocument();
-    // 렌더 완료 후 편집모드 UI 활성화 (isCharacterEditMode=true 상태에서 ON 분기 진입)
-    setTimeout(function() {
-      const blocks = document.querySelectorAll('.wiki-editable-block');
-      const cells = document.querySelectorAll('.wiki-editable-cell');
-      const thCells = document.querySelectorAll('.wiki-editable-th-cell');
-      document.body.classList.add('edit-mode-active');
-      blocks.forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-      cells.forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
-      thCells.forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
-      // 새로 추가된 섹션으로 스크롤
-      const newBlock = document.getElementById('editableBlock-' + newSecId);
-      if(newBlock) newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 60);
-  }).catch(function(err) {
-    console.error('TOC save error:', err);
-    // 저장 실패해도 일단 렌더는 함
-    isCharacterEditMode = true;
-    renderCharacterDocument();
-  });
+  char.sections.push({ id: "sec-" + Date.now(), title: title, type: "text", data: "이곳에 설정을 기술하세요." });
+  closeGlobalModal(); saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function openEditTocModalPopup(secId, currentTitle) {
   const modal = document.getElementById('modalWindowContent');
@@ -2184,37 +2005,14 @@ function submitEditTocFromModal(secId) {
   syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId); if(sec) sec.title = nextTitle;
-  closeGlobalModal();
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true;
-    renderCharacterDocument();
-    setTimeout(function() {
-      document.body.classList.add('edit-mode-active');
-      document.querySelectorAll('.wiki-editable-block').forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-cell').forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-th-cell').forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
-    }, 60);
-  });
+  closeGlobalModal(); saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 function deleteCustomSection(secId) {
   if(secId==='sec-0' || secId==='sec-1') return alert('기본 명세 축은 삭제할 수 없습니다.');
   syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections = char.sections.filter(s => s.id !== secId);
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true;
-    renderCharacterDocument();
-    setTimeout(function() {
-      document.body.classList.add('edit-mode-active');
-      document.querySelectorAll('.wiki-editable-block').forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-cell').forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-th-cell').forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
-    }, 60);
-  });
+  saveToFirebase(); renderCharacterDocument(); isCharacterEditMode = false; toggleCharacterEditMode();
 }
 
 function insertLinkToEditor() {
@@ -2562,7 +2360,6 @@ function getPhoneData() {
   if (!char.phone.rooms) char.phone.rooms = [];
   if (!char.phone.album) char.phone.album = { banner: '', avatar: '', name: '', bio: '', posts: [] };
   if (!char.phone.album.posts) char.phone.album.posts = [];
-  if (!char.phone.music) char.phone.music = { title: '노래 제목', artist: '아티스트', cover: '', youtubeUrl: '', duration: '3:45', playlist: [] };
   return char.phone;
 }
 
@@ -2637,7 +2434,6 @@ function renderPhone() {
       '<div class="phone-apps">' +
         '<div class="phone-app-icon phone-app-msg" onclick="phoneState.screen=\'msgList\';renderPhone()"><div class="icon-wrap">💬</div><div class="icon-label">메시지</div></div>' +
         '<div class="phone-app-icon phone-app-album" onclick="phoneState.screen=\'album\';renderPhone()"><div class="icon-wrap">📸</div><div class="icon-label">인스타</div></div>' +
-        '<div class="phone-app-icon phone-app-music" onclick="phoneState.screen=\'music\';renderPhone()"><div class="icon-wrap">🎵</div><div class="icon-label">뮤직</div></div>' +
       '</div>' +
       '<div class="phone-home-edit">' +
         '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){getPhoneData().bg=ev.target.result;saveToFirebase();renderPhone();};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
@@ -2657,10 +2453,6 @@ function renderPhone() {
     renderPostDetail();
   } else if (phoneState.screen === 'newPost') {
     renderNewPost();
-  } else if (phoneState.screen === 'music') {
-    renderMusicPlayer();
-  } else if (phoneState.screen === 'musicEdit') {
-    renderMusicPlayerEdit();
   }
 }
 
@@ -3057,224 +2849,6 @@ function deletePost() {
       saveToFirebase(); phoneState.screen = 'album'; renderPhone();
     }
   });
-}
-
-
-function renderMusicPlayer() {
-  var scr = document.getElementById('phoneScreen');
-  var pd = getPhoneData();
-  var mu = pd.music || {};
-  var cover = mu.cover ? 'background-image:url(''+mu.cover+'');background-size:cover;background-position:center;' : 'background:linear-gradient(135deg,#1a1a2e,#6b4fd8);';
-  var playlist = mu.playlist || [];
-  var nowIdx = typeof phoneState.musicNowIdx === 'number' ? phoneState.musicNowIdx : -1;
-  var nowTrack = nowIdx >= 0 && playlist[nowIdx] ? playlist[nowIdx] : { title: mu.title||'노래 제목', artist: mu.artist||'아티스트', cover: mu.cover||'', youtubeUrl: mu.youtubeUrl||'', duration: mu.duration||'3:45' };
-  var trackCover = nowTrack.cover ? 'background-image:url(''+nowTrack.cover+'');background-size:cover;background-position:center;' : cover;
-  var playlistHtml = '';
-  playlist.forEach(function(t, i) {
-    var active = i === nowIdx;
-    playlistHtml += '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:8px;background:'+(active?'rgba(255,255,255,0.12)':'transparent')+';transition:background 0.15s" onclick="phoneState.musicNowIdx='+i+';renderPhone()">' +
-      '<div style="width:38px;height:38px;border-radius:6px;flex-shrink:0;'+(t.cover?'background-image:url(''+t.cover+'');background-size:cover;background-position:center;':'background:rgba(255,255,255,0.15);')+'display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px">'+(t.cover?'':'🎵')+'</div>' +
-      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:'+(active?'700':'400')+';color:'+(active?'#c4b5fd':'rgba(255,255,255,0.9)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.title+'</div><div style="font-size:11px;color:rgba(255,255,255,0.5)">'+t.artist+'</div></div>' +
-      '<div style="font-size:11px;color:rgba(255,255,255,0.5)">'+t.duration+'</div>' +
-    '</div>';
-  });
-  var playBtn = nowTrack.youtubeUrl
-    ? '<a href="'+nowTrack.youtubeUrl+'" target="_blank" style="width:52px;height:52px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;text-decoration:none;box-shadow:0 4px 16px rgba(0,0,0,0.3)">▶</a>'
-    : '<div style="width:52px;height:52px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;opacity:0.4">▶</div>';
-  scr.innerHTML = '<div style="flex:1;display:flex;flex-direction:column;background:#0f0f1a;overflow:hidden">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;flex-shrink:0">' +
-      '<button style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px" onclick="phoneState.screen='home';renderPhone()">←</button>' +
-      '<span style="color:#fff;font-size:14px;font-weight:600">뮤직</span>' +
-      '<button style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:18px;cursor:pointer;padding:4px 8px" onclick="phoneState.screen='musicEdit';renderPhone()">✏️</button>' +
-    '</div>' +
-    '<div style="flex-shrink:0;padding:16px 20px 10px">' +
-      '<div style="width:180px;height:180px;border-radius:16px;'+trackCover+'margin:0 auto 16px;box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
-      '<div style="text-align:center;margin-bottom:16px">' +
-        '<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">'+nowTrack.title+'</div>' +
-        '<div style="font-size:13px;color:rgba(255,255,255,0.5)">'+nowTrack.artist+'</div>' +
-      '</div>' +
-      '<div style="background:rgba(255,255,255,0.12);border-radius:3px;height:4px;margin:0 4px 4px"><div style="background:#c4b5fd;height:100%;width:35%;border-radius:3px"></div></div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.4);margin:0 4px 16px">'+
-        '<span>0:00</span><span>'+nowTrack.duration+'</span></div>' +
-      '<div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-bottom:16px">' +
-        '<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);cursor:pointer;font-size:16px" onclick="if(typeof phoneState.musicNowIdx==='number'&&phoneState.musicNowIdx>0){phoneState.musicNowIdx--;renderPhone();}">⏮</div>' +
-        playBtn +
-        '<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);cursor:pointer;font-size:16px" onclick="var pl=(getPhoneData().music.playlist||[]);if(typeof phoneState.musicNowIdx==='number'&&phoneState.musicNowIdx<pl.length-1){phoneState.musicNowIdx++;renderPhone();}">⏭</div>' +
-      '</div>' +
-    '</div>' +
-    '<div style="flex:1;overflow-y:auto;padding:0 8px 12px">' +
-      '<div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:600;letter-spacing:0.08em;padding:6px 14px 6px">PLAYLIST</div>' +
-      (playlistHtml || '<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.3);font-size:13px">플레이리스트가 없어요<br>✏️ 버튼으로 추가해보세요</div>') +
-    '</div>' +
-  '</div>';
-}
-
-function renderMusicPlayerEdit() {
-  var scr = document.getElementById('phoneScreen');
-  var pd = getPhoneData();
-  var mu = pd.music || {};
-  var playlist = mu.playlist || [];
-  var coverPreview = mu.cover ? '<img src="'+mu.cover+'" class="settings-img-preview" id="muCoverPreview">' : '<img style="display:none" class="settings-img-preview" id="muCoverPreview">';
-  var trackRows = playlist.map(function(t,i){
-    var tc = t.cover ? '<img src="'+t.cover+'" style="width:32px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0">' : '<div style="width:32px;height:32px;border-radius:4px;background:#2a2a3e;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎵</div>';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0">' +
-      tc +
-      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.title+'</div><div style="font-size:11px;color:#888">'+t.artist+'</div></div>' +
-      '<button onclick="editMusicTrack('+i+')" style="background:none;border:none;color:#6b4fd8;font-size:13px;cursor:pointer;padding:2px 6px">✏️</button>' +
-      '<button onclick="deleteMusicTrack('+i+')" style="background:none;border:none;color:#ef4444;font-size:13px;cursor:pointer;padding:2px 6px">🗑</button>' +
-    '</div>';
-  }).join('');
-  scr.innerHTML = '<div class="msg-app">' +
-    '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen='music';renderPhone()">←</button><span class="msg-header-title">뮤직 편집</span></div>' +
-    '<div class="chat-settings-wrap">' +
-      '<div class="chat-settings-section">' +
-        '<div class="chat-settings-section-title">기본 설정</div>' +
-        '<div class="settings-row"><label>기본 노래 제목</label><input id="muTitle" value="'+(mu.title||'')+'"></div>' +
-        '<div class="settings-row"><label>기본 아티스트</label><input id="muArtist" value="'+(mu.artist||'')+'"></div>' +
-        '<div class="settings-row"><label>기본 재생 시간</label><input id="muDuration" value="'+(mu.duration||'3:45')+'" placeholder="3:45"></div>' +
-        '<div class="settings-row"><label>기본 유튜브 링크</label><input id="muYtUrl" value="'+(mu.youtubeUrl||'')+'" placeholder="https://youtu.be/..."></div>' +
-        '<div class="settings-row"><label>기본 커버 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById('muCoverPreview');p.src=ev.target.result;p.style.display='block';window._tmpMuCover=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
-          coverPreview +
-        '</div>' +
-      '</div>' +
-      '<div class="chat-settings-section">' +
-        '<div class="chat-settings-section-title" style="display:flex;justify-content:space-between;align-items:center">플레이리스트 <button onclick="openAddTrackModal()" style="font-size:11px;padding:3px 10px;border:1px solid #6b4fd8;border-radius:6px;background:#f0ecff;color:#6b4fd8;cursor:pointer">+ 추가</button></div>' +
-        (trackRows || '<div style="text-align:center;padding:16px;color:#aaa;font-size:13px">트랙이 없어요</div>') +
-      '</div>' +
-      '<button class="settings-save-btn" onclick="saveMusicSettings()">저장</button>' +
-    '</div>' +
-  '</div>';
-}
-
-function saveMusicSettings() {
-  var pd = getPhoneData();
-  pd.music.title = document.getElementById('muTitle').value;
-  pd.music.artist = document.getElementById('muArtist').value;
-  pd.music.duration = document.getElementById('muDuration').value;
-  pd.music.youtubeUrl = document.getElementById('muYtUrl').value;
-  if(window._tmpMuCover) { pd.music.cover = window._tmpMuCover; window._tmpMuCover = null; }
-  saveToFirebase(); phoneState.screen = 'music'; renderPhone();
-}
-
-function openAddTrackModal() {
-  showPhoneModal({ title: '트랙 추가', confirmText: '다음 →',
-    onConfirm: function() { openAddTrackDetailModal({}); }
-  });
-  // 실제로는 바로 상세 모달로
-  document.getElementById('phoneModalOverlay') && document.getElementById('phoneModalOverlay').remove();
-  openAddTrackDetailModal({});
-}
-function openAddTrackDetailModal(track, editIdx) {
-  var frame = document.getElementById('phoneFrame');
-  var mo = document.createElement('div'); mo.className = 'phone-modal-overlay'; mo.id = 'phoneModalOverlay';
-  var coverPreview = track.cover ? '<img src="'+track.cover+'" style="width:56px;height:56px;border-radius:8px;object-fit:cover;display:block" id="trackCoverPreview">' : '<img style="display:none;width:56px;height:56px;border-radius:8px;object-fit:cover" id="trackCoverPreview">';
-  mo.innerHTML = '<div class="phone-modal-sheet" style="max-height:88%;overflow-y:auto">' +
-    '<div class="phone-modal-title">'+(typeof editIdx==='number'?'트랙 수정':'트랙 추가')+'</div>' +
-    '<div style="display:flex;flex-direction:column;gap:10px;margin:12px 0">' +
-      '<input id="trkTitle" placeholder="노래 제목" value="'+(track.title||'')+'" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">' +
-      '<input id="trkArtist" placeholder="아티스트" value="'+(track.artist||'')+'" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">' +
-      '<input id="trkDuration" placeholder="재생시간 (예: 3:45)" value="'+(track.duration||'')+'" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">' +
-      '<input id="trkYtUrl" placeholder="유튜브 링크 (선택)" value="'+(track.youtubeUrl||'')+'" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-        coverPreview +
-        '<label style="flex:1;padding:8px 12px;background:#f0ecff;border:1px solid #d4c9f7;border-radius:8px;font-size:12px;color:#6b4fd8;cursor:pointer;text-align:center">🎨 커버 이미지<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){window._tmpTrkCover=ev.target.result;var p=document.getElementById('trackCoverPreview');p.src=ev.target.result;p.style.display='block';};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
-      '</div>' +
-    '</div>' +
-    '<button class="phone-modal-btn confirm" id="trkConfirm">저장</button>' +
-    '<button class="phone-modal-btn cancel" id="trkCancel">취소</button>' +
-  '</div>';
-  frame.appendChild(mo);
-  document.getElementById('trkCancel').onclick = function(){ mo.remove(); window._tmpTrkCover=null; };
-  document.getElementById('trkConfirm').onclick = function(){
-    var t = document.getElementById('trkTitle').value.trim()||'제목 없음';
-    var a = document.getElementById('trkArtist').value.trim()||'';
-    var d = document.getElementById('trkDuration').value.trim()||'';
-    var y = document.getElementById('trkYtUrl').value.trim()||'';
-    var c = window._tmpTrkCover || track.cover || '';
-    window._tmpTrkCover = null;
-    var pd = getPhoneData();
-    if(!pd.music.playlist) pd.music.playlist = [];
-    if(typeof editIdx === 'number') { pd.music.playlist[editIdx] = { title:t, artist:a, duration:d, youtubeUrl:y, cover:c }; }
-    else { pd.music.playlist.push({ title:t, artist:a, duration:d, youtubeUrl:y, cover:c }); }
-    mo.remove(); saveToFirebase(); renderMusicPlayerEdit();
-  };
-}
-function editMusicTrack(i) { var pd = getPhoneData(); openAddTrackDetailModal(pd.music.playlist[i]||{}, i); }
-function deleteMusicTrack(i) {
-  showPhoneModal({ title:'트랙 삭제', desc:'이 트랙을 삭제할까요?', confirmText:'삭제', confirmClass:'danger',
-    onConfirm: function(){ var pd=getPhoneData(); pd.music.playlist.splice(i,1); saveToFirebase(); renderMusicPlayerEdit(); }
-  });
-}
-
-/* ==================== 💬 명언/대사 인용구 블록 ==================== */
-function openQuoteBlockInsertModal() {
-  saveSelectionCacheRange();
-  var activeBlock = document.querySelector('.wiki-editable-block.edit-active');
-  if(!activeBlock) return alert('편집 중인 텍스트 블록을 먼저 클릭하세요.');
-  window._quoteTargetBlock = activeBlock.id;
-  var modal = document.getElementById('modalWindowContent');
-  modal.innerHTML =
-    '<div class="modal-title">💬 명언 / 대사 블록 삽입</div>' +
-    '<div class="modal-body-form">' +
-      '<div class="form-group"><label class="form-label">대사 / 명언 내용</label><textarea id="quoteText" class="form-input" rows="3" style="resize:none" placeholder="여기에 대사나 명언을 입력하세요..."></textarea></div>' +
-      '<div class="form-group"><label class="form-label">출처 / 상황 (선택)</label><input type="text" id="quoteSource" class="form-input" placeholder="예: 1화 독백, 이름에게"></div>' +
-      '<div class="form-group"><label class="form-label">스타일</label>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="quoteStylePicker">' +
-          '<div onclick="selectQuoteStyle('line')" id="qsLine" style="padding:10px;border:2px solid var(--accent);border-radius:8px;cursor:pointer;text-align:center;background:var(--accent-bg)">' +
-            '<div style="border-left:3px solid var(--accent);padding-left:8px;font-size:12px;color:var(--text)">라인형</div>' +
-          '</div>' +
-          '<div onclick="selectQuoteStyle('box')" id="qsBox" style="padding:10px;border:2px solid var(--border2);border-radius:8px;cursor:pointer;text-align:center">' +
-            '<div style="border:1px solid var(--border2);border-radius:6px;padding:4px;font-size:12px;color:var(--text)">박스형</div>' +
-          '</div>' +
-          '<div onclick="selectQuoteStyle('center')" id="qsCenter" style="padding:10px;border:2px solid var(--border2);border-radius:8px;cursor:pointer;text-align:center">' +
-            '<div style="font-size:12px;color:var(--text)">〝 중앙형 〞</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="form-group"><label class="form-label">강조색 (선택)</label>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          '<input type="color" id="quoteColor" value="#6b4fd8" style="width:36px;height:36px;border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer" oninput="document.getElementById('quoteColorHex').value=this.value">' +
-          '<input type="text" id="quoteColorHex" value="#6b4fd8" maxlength="7" style="flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)" oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('quoteColor').value=v;}">' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="insertQuoteBlock()">삽입</button></div>';
-  document.getElementById('globalModalOverlay').style.display = 'flex';
-  window._quoteStyle = 'line';
-}
-function selectQuoteStyle(style) {
-  window._quoteStyle = style;
-  ['line','box','center'].forEach(function(s){
-    var el = document.getElementById('qs'+s.charAt(0).toUpperCase()+s.slice(1));
-    if(!el) return;
-    el.style.borderColor = s===style ? 'var(--accent)' : 'var(--border2)';
-    el.style.background = s===style ? 'var(--accent-bg)' : '';
-  });
-}
-function insertQuoteBlock() {
-  var text = document.getElementById('quoteText').value.trim(); if(!text) return alert('내용을 입력해주세요.');
-  var source = document.getElementById('quoteSource').value.trim();
-  var style = window._quoteStyle || 'line';
-  var hexEl = document.getElementById('quoteColorHex');
-  var color = (hexEl && /^#[0-9a-fA-F]{6}$/.test(hexEl.value)) ? hexEl.value : document.getElementById('quoteColor').value;
-  var uid = 'quote-' + Date.now();
-  var sourceHtml = source ? '<div style="font-size:12px;color:'+color+';opacity:0.8;margin-top:6px;font-style:normal">— '+source+'</div>' : '';
-  var blockHtml = '';
-  if(style === 'line') {
-    blockHtml = '<div id="'+uid+'" class="char-quote-block" data-qstyle="line" contenteditable="false" style="border-left:4px solid '+color+';padding:12px 16px;margin:14px 0;background:var(--accent-bg);border-radius:0 8px 8px 0;position:relative"><div class="quote-del-btn" onclick="this.parentElement.remove()" style="display:none;position:absolute;top:6px;right:8px;font-size:11px;color:#dc2626;cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:4px">✕ 삭제</div><div style="font-size:15px;color:var(--text);line-height:1.7;font-style:italic">'+text+'</div>'+sourceHtml+'</div>';
-  } else if(style === 'box') {
-    blockHtml = '<div id="'+uid+'" class="char-quote-block" data-qstyle="box" contenteditable="false" style="border:2px solid '+color+';padding:14px 18px;margin:14px 0;border-radius:10px;position:relative;background:var(--white)"><div class="quote-del-btn" onclick="this.parentElement.remove()" style="display:none;position:absolute;top:6px;right:8px;font-size:11px;color:#dc2626;cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:4px">✕ 삭제</div><div style="font-size:15px;color:var(--text);line-height:1.7">'+text+'</div>'+sourceHtml+'</div>';
-  } else {
-    blockHtml = '<div id="'+uid+'" class="char-quote-block" data-qstyle="center" contenteditable="false" style="text-align:center;padding:20px 24px;margin:14px 0;position:relative"><div class="quote-del-btn" onclick="this.parentElement.remove()" style="display:none;position:absolute;top:6px;right:8px;font-size:11px;color:#dc2626;cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:4px">✕ 삭제</div><div style="font-size:28px;color:'+color+';line-height:0.5;margin-bottom:8px">"</div><div style="font-size:15px;color:var(--text);line-height:1.7;font-style:italic">'+text+'</div><div style="font-size:28px;color:'+color+';line-height:0.5;margin-top:8px">"</div>'+sourceHtml+'</div>';
-  }
-  closeGlobalModal();
-  var targetBlock = window._quoteTargetBlock ? document.getElementById(window._quoteTargetBlock) : null;
-  if(targetBlock) { targetBlock.innerHTML += blockHtml + '<p><br></p>'; }
-  else {
-    var fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.wiki-editable-block');
-    if(fallback) fallback.innerHTML += blockHtml + '<p><br></p>';
-  }
 }
 
 function addChatRoom() {
