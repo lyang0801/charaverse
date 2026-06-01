@@ -185,7 +185,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .rel-system-header{font-size:14px;font-weight:bold;color:var(--accent);margin-bottom:10px}
 .rel-toolbar{display:none;gap:8px;margin-bottom:10px}
 .rel-canvas-viewport{width:100%;height:460px;position:relative;overflow:hidden;user-select:none;background:transparent}
-.rel-svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.rel-svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}
 
 .rel-node-circle{width:70px;height:70px;border-radius:50%;background:var(--white);border:3px solid var(--border2);position:absolute;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
 .rel-node-avatar-slot{width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface);cursor:pointer}
@@ -488,10 +488,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
           <div class="color-picker-wrapper">
             <span>글자색</span>
-            <input type="color" class="color-input" id="toolbarColorPicker" oninput="document.getElementById('toolbarColorHex').value=this.value; document.execCommand('foreColor',false,this.value)">
+            <input type="color" class="color-input" id="toolbarColorPicker" oninput="document.getElementById('toolbarColorHex').value=this.value; applyFontColorToSelection(this.value)">
             <input type="text" id="toolbarColorHex" placeholder="#000000" maxlength="7"
               style="width:72px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:var(--white);color:var(--text)"
-              oninput="var v=this.value; if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('toolbarColorPicker').value=v; document.execCommand('foreColor',false,v);}">
+              oninput="var v=this.value; if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('toolbarColorPicker').value=v; applyFontColorToSelection(v);}">
           </div>
 
           <span style="color:var(--border2); margin:0 4px">|</span>
@@ -770,6 +770,25 @@ function applyFontSizeToSelection(size) {
   sel.removeAllRanges();
   // 크기 선택 리셋
   setTimeout(function(){ var s = document.getElementById('toolbarFontSize'); if(s) s.value=''; }, 50);
+}
+
+function applyFontColorToSelection(color) {
+  if(!color) return;
+  var sel = window.getSelection();
+  if(savedSelectionRange) { try { sel.removeAllRanges(); sel.addRange(savedSelectionRange); } catch(e){} }
+  if(!sel || !sel.rangeCount || sel.isCollapsed) {
+    // 선택 없으면 execCommand fallback
+    document.execCommand('foreColor', false, color);
+    return;
+  }
+  var range = sel.getRangeAt(0);
+  var span = document.createElement('span');
+  span.style.color = color;
+  try { range.surroundContents(span); } catch(e) {
+    var frag = range.extractContents();
+    span.appendChild(frag); range.insertNode(span);
+  }
+  sel.removeAllRanges();
 }
 
 function updateNavbar() {
@@ -1579,6 +1598,7 @@ function drawRelationshipArrowsSvg(rel) {
     hitPath.setAttribute("d", pathD); hitPath.setAttribute("stroke","transparent");
     hitPath.setAttribute("stroke-width","18"); hitPath.setAttribute("fill","none");
     hitPath.style.cursor = 'pointer';
+    hitPath.style.pointerEvents = 'all';
     // 편집 모드에서만 더블클릭 수정 팝업 (항상 더블클릭으로 열림)
     hitPath.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openEdgeEditPopup(edIdx); });
     path.addEventListener('dblclick', function(ev){ ev.stopPropagation(); openEdgeEditPopup(edIdx); });
@@ -2562,6 +2582,27 @@ function setupTocDragEvents(wrapper) {
 // ══════════════════════════════════════════
 var phoneState = { screen: 'home', currentRoom: null, currentPost: null, postSlide: 0, replyingTo: null };
 
+/* ── 이미지 압축 유틸리티 (Firebase 저장 최적화) ── */
+function compressImageDataUrl(dataUrl, maxW, maxH, quality, cb) {
+  var img = new Image();
+  img.onload = function() {
+    var w = img.width, h = img.height;
+    var scale = Math.min(1, maxW / w, maxH / h);
+    var cw = Math.round(w * scale), ch = Math.round(h * scale);
+    var canvas = document.createElement('canvas');
+    canvas.width = cw; canvas.height = ch;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, cw, ch);
+    cb(canvas.toDataURL('image/jpeg', quality || 0.75));
+  };
+  img.src = dataUrl;
+}
+function compressFile(file, maxW, maxH, quality, cb) {
+  var r = new FileReader();
+  r.onload = function(e) { compressImageDataUrl(e.target.result, maxW, maxH, quality, cb); };
+  r.readAsDataURL(file);
+}
+
 function getPhoneData() {
   var char = charaverseDatabase[currentCreator].folders
     .find(function(f){ return f.name === currentFolder; }).characters
@@ -2648,7 +2689,7 @@ function renderPhone() {
         '<div class="phone-app-icon phone-app-music" onclick="phoneState.screen=\'music\';renderPhone()"><div class="icon-wrap">🎵</div><div class="icon-label">뮤직</div></div>' +
       '</div>' +
       '<div class="phone-home-edit">' +
-        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){getPhoneData().bg=ev.target.result;saveToFirebase();renderPhone();};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],800,1400,0.80,function(d){getPhoneData().bg=d;saveToFirebase();renderPhone();});})(event)"></label>' +
       '</div>' +
     '</div>';
   } else if (phoneState.screen === 'msgList') {
@@ -2791,7 +2832,7 @@ function renderChatSettings() {
         '<div class="settings-row"><label>채팅방 이름</label><input id="sRoomName" value="'+(room.name||'')+'"></div>' +
         '<div class="settings-row"><label>프로필 이모지</label><input id="sRoomEmoji" value="'+(room.emoji||'💬')+'"></div>' +
         '<div class="settings-row"><label>프로필 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpRoomAvatar=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],200,200,0.82,function(d){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpRoomAvatar=d;})})(event)"></label>' +
           avatarPreview +
         '</div>' +
       '</div>' +
@@ -2861,11 +2902,11 @@ function renderAlbumEdit() {
         '<div class="settings-row"><label>이름 (아이디)</label><input id="alName" value="'+(al.name||'')+'"></div>' +
         '<div class="settings-row"><label>소개글 (엔터로 줄바꿈)</label><textarea id="alBio" rows="3" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1916;font-family:inherit;resize:none">'+bioVal+'</textarea></div>' +
         '<div class="settings-row"><label>프로필 사진</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'alAvatarPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpAlAvatar=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],300,300,0.82,function(d){var p=document.getElementById(\'alAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpAlAvatar=d;})})(event)"></label>' +
           avatarPreview +
         '</div>' +
         '<div class="settings-row"><label>배너 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'alBannerPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpAlBanner=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],900,400,0.80,function(d){var p=document.getElementById(\'alBannerPreview\');p.src=d;p.style.display=\'block\';window._tmpAlBanner=d;})})(event)"></label>' +
           bannerPreview +
         '</div>' +
       '</div>' +
@@ -2912,13 +2953,11 @@ function addNewPostImages(e) {
   var files = Array.from(e.target.files);
   var remaining = files.length;
   files.forEach(function(f) {
-    var r = new FileReader();
-    r.onload = function(ev) {
-      window._newPostImages.push(ev.target.result);
+    compressFile(f, 800, 800, 0.78, function(dataUrl) {
+      window._newPostImages.push(dataUrl);
       remaining--;
       if (remaining === 0) renderNewPost();
-    };
-    r.readAsDataURL(f);
+    });
   });
 }
 
@@ -3383,15 +3422,13 @@ function sendImageMsg(e) {
   var sender = document.getElementById('msgSender');
   var now = new Date();
   var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  var r = new FileReader();
-  r.onload = function(ev) {
+  compressFile(e.target.files[0], 600, 600, 0.75, function(dataUrl) {
     var pd = getPhoneData();
     var room = pd.rooms[phoneState.currentRoom];
     if (!room.messages) room.messages = [];
-    room.messages.push({ image: ev.target.result, text: '', sender: sender ? sender.value : '나', time: time });
+    room.messages.push({ image: dataUrl, text: '', sender: sender ? sender.value : '나', time: time });
     saveToFirebase(); renderChatRoom();
-  };
-  r.readAsDataURL(e.target.files[0]);
+  });
 }
 function addDateDivider() {
   var now = new Date();
