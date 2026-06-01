@@ -1519,13 +1519,17 @@ function drawRelationshipArrowsSvg(rel) {
   if(!rel.nodes) rel.nodes = [];
   svg.innerHTML = `<defs></defs>`;
 
-  const pairCountMap = {};
+  // 같은 노드 쌍(정렬키) 내 각 엣지가 몇 번째인지, 그리고 반대 방향이 있는지 파악
+  // oppositePairMap: 정렬키 → 양방향 모두 존재하는지 (A→B 와 B→A 가 둘 다 있는 경우)
+  const sortedPairEdgeList = {}; // 정렬키 → [{ed, dir}] (dir: 'normal'|'reverse')
   rel.edges.forEach(ed => {
-    const pairId = [ed.from, ed.to].sort().join('-');
-    pairCountMap[pairId] = (pairCountMap[pairId] || 0) + 1;
+    const sortedKey = [ed.from, ed.to].sort().join('-');
+    if(!sortedPairEdgeList[sortedKey]) sortedPairEdgeList[sortedKey] = [];
+    sortedPairEdgeList[sortedKey].push(ed);
   });
-  
-  const currentPairTrack = {};
+
+  // 각 엣지를 순서대로 그림
+  const drawnSameDir = {}; // "from-to" 키 → 이미 그린 횟수 (같은 방향 중복)
 
   rel.edges.forEach((ed) => {
     const fromNd = rel.nodes.find(n => n.id === ed.from);
@@ -1534,44 +1538,50 @@ function drawRelationshipArrowsSvg(rel) {
     const fx = fromNd.x + 35; const fy = fromNd.y + 35;
     const tx = toNd.x + 35; const ty = toNd.y + 35;
 
-    const pairId = [ed.from, ed.to].sort().join('-');
-    currentPairTrack[pairId] = (currentPairTrack[pairId] || 0) + 1;
-
-    const totalInPair = pairCountMap[pairId];
     const dx = tx - fx; const dy = ty - fy;
     const dist = Math.sqrt(dx * dx + dy * dy); if(dist === 0) return;
     const angle = Math.atan2(dy, dx);
+    const nx = -Math.sin(angle); const ny = Math.cos(angle); // 법선벡터
 
-    // 노드 테두리에 화살표 마커가 닿도록 안쪽 여백 반지름 보정
+    const sortedKey = [ed.from, ed.to].sort().join('-');
+    const edgesInPair = sortedPairEdgeList[sortedKey];
+    // 반대 방향 엣지가 있는지 (A→B 이면 B→A 가 있는지)
+    const hasOpposite = edgesInPair.some(e => e.from === ed.to && e.to === ed.from);
+    // 같은 방향 엣지 카운트 (A→B 가 몇 개인지)
+    const sameDirKey = ed.from + '->' + ed.to;
+    drawnSameDir[sameDirKey] = (drawnSameDir[sameDirKey] || 0) + 1;
+    const sameDirIdx = drawnSameDir[sameDirKey]; // 1부터 시작
+
+    // 현재 방향 기준으로 이 엣지가 정렬키 기준 "정방향"인지 판단
+    const isNormal = ed.from < ed.to || (ed.from === sortedKey.split('-')[0]);
+
+    let pathD, textX, textY;
     const startX = fx + 35 * Math.cos(angle); const startY = fy + 35 * Math.sin(angle);
     const endX = tx - 38 * Math.cos(angle); const endY = ty - 38 * Math.sin(angle);
 
-    let pathD = `M ${startX} ${startY} L ${endX} ${endY}`;
-    let textX = (startX + endX) / 2; let textY = (startY + endY) / 2;
-
-    /* [피드백 반영] 왕복 화살표가 마주보고 있을 경우 곡률 방향을 분리 연산하여 절대 겹치지 않게 고도화 */
-    if (totalInPair > 1) {
-      const pairIndex = currentPairTrack[pairId]; // 1 또는 2
-      // 첫 번째 화살표는 위쪽, 두 번째는 아래쪽으로 분리
-      const curveFactor = pairIndex === 1 ? 55 : -55;
+    if (hasOpposite) {
+      // 반대 방향이 있는 경우: 곡선으로 분리 (기존 로직)
+      const curveFactor = isNormal ? 55 : -55;
       const midX = (fx + tx) / 2; const midY = (fy + ty) / 2;
-      const nx = -Math.sin(angle); const ny = Math.cos(angle);
-      
       const cpX = midX + nx * curveFactor; const cpY = midY + ny * curveFactor;
-
       const sAngle = Math.atan2(cpY - fy, cpX - fx);
       const eAngle = Math.atan2(cpY - ty, cpX - tx);
-
       const adjStartX = fx + 35 * Math.cos(sAngle); const adjStartY = fy + 35 * Math.sin(sAngle);
       const adjEndX = tx + 38 * Math.cos(eAngle); const adjEndY = ty + 38 * Math.sin(eAngle);
-
       pathD = `M ${adjStartX} ${adjStartY} Q ${cpX} ${cpY} ${adjEndX} ${adjEndY}`;
       textX = (adjStartX + cpX * 2 + adjEndX) / 4; textY = (adjStartY + cpY * 2 + adjEndY) / 4;
-      
-      // 왕복선 자막 충돌 방지 오프셋 보완
-      textY += pairIndex === 1 ? -16 : 16;
+      textY += isNormal ? -16 : 16;
+    } else if (sameDirIdx > 1) {
+      // 같은 방향 중복: 나란히 평행 오프셋으로 분리
+      const offset = (sameDirIdx - 1) * 14; // 14px씩 옆으로
+      const sign = sameDirIdx % 2 === 0 ? 1 : -1;
+      const offX = nx * offset * sign; const offY = ny * offset * sign;
+      pathD = `M ${startX + offX} ${startY + offY} L ${endX + offX} ${endY + offY}`;
+      textX = (startX + endX) / 2 + offX; textY = (startY + endY) / 2 + offY - 8;
     } else {
-      textY -= 8;
+      // 단일 직선
+      pathD = `M ${startX} ${startY} L ${endX} ${endY}`;
+      textX = (startX + endX) / 2; textY = (startY + endY) / 2 - 8;
     }
 
     const markerId = `marker-${ed.from}-${ed.to}-${rel.edges.indexOf(ed)}`;
@@ -1892,8 +1902,7 @@ function openIntegratedArrowLinkModal() {
         <div style="display:flex;align-items:center;gap:10px">
           <input type="color" id="modalEdgeCustomColorPicker" value="#6b4fd8" style="width:44px;height:36px;border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer">
           <input type="text" id="modalEdgeColorHex" placeholder="#6b4fd8" maxlength="7" value="#6b4fd8"
-            style="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)"
-            oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('modalEdgeCustomColorPicker').value=v;}">
+            style="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)">
         </div>
       </div>
       <div class="form-group">
@@ -1905,6 +1914,13 @@ function openIntegratedArrowLinkModal() {
     </div>
     <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitIntegratedEdgeArrowLink()">연결 완료</button></div>`;
   document.getElementById('globalModalOverlay').style.display = "flex";
+  // 색상 피커 ↔ hex 입력 양방향 연동 (모달 렌더 후 직접 이벤트 바인딩)
+  const picker = document.getElementById('modalEdgeCustomColorPicker');
+  const hexIn = document.getElementById('modalEdgeColorHex');
+  picker.addEventListener('input', function(){ hexIn.value = this.value; });
+  hexIn.addEventListener('input', function(){
+    if(/^#[0-9a-fA-F]{6}$/.test(this.value)) picker.value = this.value;
+  });
 }
 function submitIntegratedEdgeArrowLink() {
   const from = document.getElementById('modalEdgeFrom').value; const to = document.getElementById('modalEdgeTo').value;
@@ -1939,8 +1955,8 @@ function openEdgeEditPopup(edIdx) {
       <div class="form-group"><label class="form-label">관계 내용</label><input type="text" id="editEdgeText" class="form-input" value="${(ed.text||'').replace(/"/g,'&quot;')}"></div>
       <div class="form-group"><label class="form-label">선 색상</label>
         <div style="display:flex;align-items:center;gap:10px">
-          <input type="color" id="editEdgeColorPicker" value="${edColor}" style="width:44px;height:36px;border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer" oninput="document.getElementById('editEdgeColorHex').value=this.value">
-          <input type="text" id="editEdgeColorHex" value="${edColor}" maxlength="7" placeholder="#6b4fd8" style="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)" oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('editEdgeColorPicker').value=v;}">
+          <input type="color" id="editEdgeColorPicker" value="${edColor}" style="width:44px;height:36px;border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer">
+          <input type="text" id="editEdgeColorHex" value="${edColor}" maxlength="7" placeholder="#6b4fd8" style="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text)">
         </div>
       </div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="editEdgeBidir" ${ed.bidirectional?'checked':''} style="width:16px;height:16px;accent-color:var(--accent)"><span>양방향 화살표 (↔)</span></label></div>
@@ -1951,6 +1967,11 @@ function openEdgeEditPopup(edIdx) {
       <button class="btn primary" onclick="saveEdgeFromPopup(${edIdx})">저장</button>
     </div>`;
   document.getElementById('globalModalOverlay').style.display = 'flex';
+  // 색상 피커 ↔ hex 입력 양방향 연동 (렌더 후 직접 바인딩)
+  var epicker = document.getElementById('editEdgeColorPicker');
+  var ehex = document.getElementById('editEdgeColorHex');
+  epicker.addEventListener('input', function(){ ehex.value = this.value; });
+  ehex.addEventListener('input', function(){ if(/^#[0-9a-fA-F]{6}$/.test(this.value)) epicker.value = this.value; });
 }
 function saveEdgeFromPopup(edIdx) {
   var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
