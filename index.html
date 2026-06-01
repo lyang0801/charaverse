@@ -119,8 +119,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .info-table td{padding:10px 14px;color:var(--text);min-width:100px}
 
 /* [피드백 반영] 행 추가/제외를 누구나 바로 찾을 수 있도록 우측 고정 배지형 UI 개편 */
-.row-control-btn-wrap { display:none; align-items:center; gap:4px; position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:10; }
-.row-ctrl-badge { padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border2); background:var(--white); cursor:pointer; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+.row-control-btn-wrap { align-items:center; gap:4px; }
+.row-ctrl-badge { padding:2px 6px; font-size:11px; border-radius:4px; border:1px solid var(--border2); background:var(--white); cursor:pointer; font-weight:bold; white-space:nowrap; }
 .row-ctrl-badge.add { color:var(--teal); border-color:var(--teal); }
 .row-ctrl-badge.add:hover { background:var(--accent-bg); }
 .row-ctrl-badge.del { color:#dc2626; border-color:#dc2626; }
@@ -1820,11 +1820,11 @@ function renderCharacterDocument() {
         tBody += `<tr style="position:relative;">
           <th class="wiki-editable-th-cell" data-secid="${sec.id}" data-index="${rIdx}" style="position:relative;">${row.k}</th>
           <td class="wiki-editable-cell" data-secid="${sec.id}" data-index="${rIdx}">${row.v}</td>
-          <td class="row-control-btn-wrap" style="display:none; width:1%; white-space:nowrap; padding:4px 6px; background:var(--surface); border-left:1px solid var(--border);">
-             <button class="row-ctrl-badge" onclick="moveTableRow('${sec.id}', ${rIdx}, -1)" style="color:var(--accent);border-color:var(--accent)" title="위로 이동">↑</button>
-             <button class="row-ctrl-badge" onclick="moveTableRow('${sec.id}', ${rIdx}, 1)" style="color:var(--accent);border-color:var(--accent)" title="아래로 이동">↓</button>
-             <button class="row-ctrl-badge add" onclick="insertNewTableRowInlineFromNode('${sec.id}', ${rIdx})">➕ 행</button>
-             <button class="row-ctrl-badge del" onclick="deleteTableRowInlineFromNode('${sec.id}', ${rIdx})">❌</button>
+          <td class="row-control-btn-wrap" style="display:none; width:1%; white-space:nowrap; padding:3px 6px; border-left:1px solid var(--border); background:var(--surface); vertical-align:middle;">
+             <button class="row-ctrl-badge" onclick="moveTableRow('${sec.id}', ${rIdx}, -1)" style="color:var(--accent);border-color:var(--accent)">↑</button>
+             <button class="row-ctrl-badge" onclick="moveTableRow('${sec.id}', ${rIdx}, 1)" style="color:var(--accent);border-color:var(--accent)">↓</button>
+             <button class="row-ctrl-badge add" onclick="insertNewTableRowInlineFromNode('${sec.id}', ${rIdx})">＋행</button>
+             <button class="row-ctrl-badge del" onclick="deleteTableRowInlineFromNode('${sec.id}', ${rIdx})">삭제</button>
           </td>
         </tr>`;
       });
@@ -2255,31 +2255,16 @@ function submitAddNewTocFromModal() {
   const newSecId = "sec-" + Date.now();
   char.sections.push({ id: newSecId, title: title, type: "text", data: "이곳에 설정을 기술하세요." });
   closeGlobalModal();
-  // 저장 완료 후 재렌더 (race condition 방지)
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true; // 재렌더 후 편집모드 유지를 위해 미리 true
-    renderCharacterDocument();
-    // 렌더 완료 후 편집모드 UI 활성화 (isCharacterEditMode=true 상태에서 ON 분기 진입)
-    setTimeout(function() {
-      const blocks = document.querySelectorAll('.wiki-editable-block');
-      const cells = document.querySelectorAll('.wiki-editable-cell');
-      const thCells = document.querySelectorAll('.wiki-editable-th-cell');
-      document.body.classList.add('edit-mode-active');
-      blocks.forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-      cells.forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
-      thCells.forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
-      // 새로 추가된 섹션으로 스크롤
-      const newBlock = document.getElementById('editableBlock-' + newSecId);
-      if(newBlock) newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 60);
-  }).catch(function(err) {
-    console.error('TOC save error:', err);
-    // 저장 실패해도 일단 렌더는 함
-    isCharacterEditMode = true;
-    renderCharacterDocument();
-  });
+  isCharacterEditMode = true;
+  renderCharacterDocument();
+  setTimeout(function() {
+    document.body.classList.add('edit-mode-active');
+    document.querySelectorAll('.wiki-editable-block').forEach(function(b){ b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
+    document.querySelectorAll('.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
+    const newBlock = document.getElementById('editableBlock-' + newSecId);
+    if(newBlock) newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 60);
+  saveCreatorToFirebase(currentCreator);
 }
 function openEditTocModalPopup(secId, currentTitle) {
   const modal = document.getElementById('modalWindowContent');
@@ -2297,36 +2282,26 @@ function submitEditTocFromModal(secId) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId); if(sec) sec.title = nextTitle;
   closeGlobalModal();
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true;
-    renderCharacterDocument();
-    setTimeout(function() {
-      document.body.classList.add('edit-mode-active');
-      document.querySelectorAll('.wiki-editable-block').forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-cell').forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-th-cell').forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
-    }, 60);
-  });
+  isCharacterEditMode = true;
+  renderCharacterDocument();
+  setTimeout(function() {
+    document.body.classList.add('edit-mode-active');
+    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
+  }, 50);
+  saveCreatorToFirebase(currentCreator);
 }
 function deleteCustomSection(secId) {
   if(secId==='sec-0' || secId==='sec-1') return alert('기본 명세 축은 삭제할 수 없습니다.');
   syncAllSectionDataFromDOM();
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.sections = char.sections.filter(s => s.id !== secId);
-  _lastSaveTime = Date.now();
-  _dbRef.update({ [currentCreator]: charaverseDatabase[currentCreator] }).then(function() {
-    _lastSaveTime = Date.now();
-    isCharacterEditMode = true;
-    renderCharacterDocument();
-    setTimeout(function() {
-      document.body.classList.add('edit-mode-active');
-      document.querySelectorAll('.wiki-editable-block').forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-cell').forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
-      document.querySelectorAll('.wiki-editable-th-cell').forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
-    }, 60);
-  });
+  isCharacterEditMode = true;
+  renderCharacterDocument();
+  setTimeout(function() {
+    document.body.classList.add('edit-mode-active');
+    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
+  }, 50);
+  saveCreatorToFirebase(currentCreator);
 }
 
 function insertLinkToEditor() {
