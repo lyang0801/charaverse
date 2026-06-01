@@ -127,6 +127,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .row-ctrl-badge.del:hover { background:#fef2f2; }
 
 .prose{font-size:14px;color:var(--text);line-height:1.8;min-height:40px;padding:8px;border-radius:6px}
+/* 본문 인라인 이미지 삭제 버튼: 기본 숨김, 편집 모드에서만 표시 */
+.inline-img-del-btn { display:none !important; }
+.edit-mode-active .inline-img-del-btn { display:inline-block !important; }
+.edit-mode-active .inline-img-wrap img { outline:2px dashed transparent; transition:outline 0.15s; }
+.edit-mode-active .inline-img-wrap img:hover { outline:2px dashed var(--accent); }
 
 /* ==================== 📁 하위 폴더 분리형 스포일러 가림막 커포넌트 ==================== */
 .spoiler-container { border: 1px dashed #c24070; background: #fff5f8; border-radius: 8px; padding: 14px; margin: 14px 0; position: relative; }
@@ -369,6 +374,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <option value="antique-sepia">📜 앤티크 세피아</option>
     </select>
     <button class="btn" id="globalPhoneBtn" style="display:none;font-size:16px;padding:6px 10px" onclick="openPhone()" title="핸드폰">📱</button>
+    <span id="saveStatusIndicator" style="font-size:12px; color:var(--muted); min-width:80px; text-align:right; transition:color 0.2s"></span>
     <button class="btn primary" id="globalCharacterEditBtn" style="display:none" onclick="toggleCharacterEditMode()">편집 하기</button>
   </div>
 </nav>
@@ -604,9 +610,10 @@ _dbRef.on('value', function(snapshot) {
     updateNavbar();
     return;
   }
-  // 내가 저장한 직후 5000ms 이내면 Firebase 수신 데이터로 덮어쓰기 완전 차단
+  // 내가 저장한 직후 15000ms 이내면 Firebase 수신 데이터로 덮어쓰기 완전 차단
+  // (이미지 포함 저장 시 업로드가 느릴 수 있으므로 15초로 연장)
   var now = Date.now();
-  if (now - _lastSaveTime < 5000) return;
+  if (now - _lastSaveTime < 15000) return;
   // 편집 모드 중이거나 드래그 중에는 데이터/렌더 모두 차단
   if (isCharacterEditMode || _relDragging) return;
   // 캐릭터 뷰에서는 현재 보고 있는 캐릭터 데이터를 DOM에서 먼저 sync한 뒤 병합
@@ -614,7 +621,7 @@ _dbRef.on('value', function(snapshot) {
   if (data) {
     if (currentView === 'character' && currentCreator && currentFolder && currentCharacter) {
       syncAllSectionDataFromDOM();
-      // 내 현재 캐릭터 데이터를 임시 보관
+      // 내 현재 캐릭터 데이터를 임시 보관 (핸드폰 데이터 포함)
       var myCreatorData = JSON.parse(JSON.stringify(charaverseDatabase[currentCreator] || {}));
       // Firebase 데이터로 전체 교체
       charaverseDatabase = data;
@@ -623,7 +630,28 @@ _dbRef.on('value', function(snapshot) {
         charaverseDatabase[currentCreator] = myCreatorData;
       }
     } else {
-      charaverseDatabase = data;
+      // 캐릭터 뷰가 아니어도 핸드폰이 열려있으면 현재 캐릭터 phone 데이터 보호
+      if (document.getElementById('phoneOverlay') && document.getElementById('phoneOverlay').style.display === 'flex'
+          && currentCreator && currentFolder && currentCharacter && data) {
+        var myPhone = null;
+        try {
+          var creatorData = charaverseDatabase[currentCreator];
+          var folderData = creatorData && creatorData.folders && creatorData.folders.find(function(f){ return f.name === currentFolder; });
+          var charData = folderData && folderData.characters && folderData.characters.find(function(c){ return c.name === currentCharacter; });
+          if (charData && charData.phone) myPhone = JSON.parse(JSON.stringify(charData.phone));
+        } catch(e) {}
+        charaverseDatabase = data;
+        if (myPhone) {
+          try {
+            var cr2 = charaverseDatabase[currentCreator];
+            var fl2 = cr2 && cr2.folders && cr2.folders.find(function(f){ return f.name === currentFolder; });
+            var ch2 = fl2 && fl2.characters && fl2.characters.find(function(c){ return c.name === currentCharacter; });
+            if (ch2) ch2.phone = myPhone;
+          } catch(e) {}
+        }
+      } else {
+        charaverseDatabase = data;
+      }
     }
   }
   if (currentView === 'main') renderCircleCreatorGrid();
@@ -631,13 +659,33 @@ _dbRef.on('value', function(snapshot) {
   else if (currentView === 'folder') renderFolderContentPage();
   else if (currentView === 'character') renderCharacterDocument();
 });
-window.saveToFirebase = function() { _lastSaveTime = Date.now(); _dbRef.set(charaverseDatabase); };
+window.saveToFirebase = function() {
+  _lastSaveTime = Date.now();
+  var saveIndicator = document.getElementById('saveStatusIndicator');
+  if (saveIndicator) { saveIndicator.textContent = '저장 중…'; saveIndicator.style.color = 'var(--muted)'; }
+  _dbRef.set(charaverseDatabase).then(function() {
+    _lastSaveTime = Date.now();
+    if (saveIndicator) { saveIndicator.textContent = '✓ 저장됨'; saveIndicator.style.color = 'var(--teal)'; setTimeout(function(){ saveIndicator.textContent = ''; }, 2500); }
+  }).catch(function(err) {
+    if (saveIndicator) { saveIndicator.textContent = '⚠ 저장 실패'; saveIndicator.style.color = '#dc2626'; }
+    console.error('Firebase save error:', err);
+  });
+};
 // 특정 창작자만 부분 저장 (속도 최적화)
 window.saveCreatorToFirebase = function(creatorName) {
   _lastSaveTime = Date.now();
   var update = {};
   update[creatorName] = charaverseDatabase[creatorName];
-  _dbRef.update(update);
+  // 저장 상태 표시
+  var saveIndicator = document.getElementById('saveStatusIndicator');
+  if (saveIndicator) { saveIndicator.textContent = '저장 중…'; saveIndicator.style.color = 'var(--muted)'; }
+  _dbRef.update(update).then(function() {
+    _lastSaveTime = Date.now(); // 저장 완료 후 시간 재갱신
+    if (saveIndicator) { saveIndicator.textContent = '✓ 저장됨'; saveIndicator.style.color = 'var(--teal)'; setTimeout(function(){ saveIndicator.textContent = ''; }, 2500); }
+  }).catch(function(err) {
+    if (saveIndicator) { saveIndicator.textContent = '⚠ 저장 실패 (데이터가 너무 클 수 있음)'; saveIndicator.style.color = '#dc2626'; }
+    console.error('Firebase save error:', err);
+  });
 };
 window.deleteCreator = function(name) {
   if (!confirm("'" + name + "' 창작자를 삭제할까요?")) return;
@@ -1807,6 +1855,7 @@ function toggleCharacterEditMode() {
     if(relToolbarNow) relToolbarNow.style.display = 'flex';
     if(radarPanel) radarPanel.style.display = 'flex';
     
+    document.body.classList.add('edit-mode-active');
     blocks.forEach(b => { b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
     cells.forEach(c => { c.setAttribute('contenteditable','true'); c.classList.add('edit-active'); });
     thCells.forEach(th => { th.setAttribute('contenteditable','true'); th.classList.add('edit-active'); });
@@ -1838,6 +1887,7 @@ function toggleCharacterEditMode() {
     if(relToolbar) relToolbar.style.display = 'none';
     if(radarPanel) radarPanel.style.display = 'none';
     
+    document.body.classList.remove('edit-mode-active');
     blocks.forEach(b => { b.setAttribute('contenteditable','false'); b.classList.remove('edit-active'); });
     cells.forEach(c => { c.setAttribute('contenteditable','false'); c.classList.remove('edit-active'); });
     thCells.forEach(th => { th.setAttribute('contenteditable','false'); th.classList.remove('edit-active'); });
@@ -2313,13 +2363,17 @@ function getPhoneData() {
   return char.phone;
 }
 
+var _phoneAutoSaveInterval = null;
 function openPhone() {
   document.getElementById('phoneOverlay').style.display = 'flex';
   phoneState.screen = 'home';
   renderPhone();
 }
+  // 핸드폰이 열려있는 동안 10초마다 _lastSaveTime 갱신 → Firebase 덮어쓰기 방지
+  _phoneAutoSaveInterval = setInterval(function() { _lastSaveTime = Date.now(); }, 10000);
 function closePhone() {
   document.getElementById('phoneOverlay').style.display = 'none';
+  if (_phoneAutoSaveInterval) { clearInterval(_phoneAutoSaveInterval); _phoneAutoSaveInterval = null; }
 }
 
 // ── 인라인 모달 (prompt/confirm 대체) ──
