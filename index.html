@@ -2342,6 +2342,23 @@ function submitLinkInsert() {
 
 function openInlineImageInsertModal() {
   saveSelectionCacheRange();
+  // 모달 열기 전에 커서가 있는 editableBlock의 secId를 확정 저장
+  window._inlineImgTargetSecId = null;
+  if(savedSelectionRange) {
+    var node = savedSelectionRange.startContainer;
+    while(node && node !== document.body) {
+      if(node.id && node.id.startsWith('editableBlock-')) {
+        window._inlineImgTargetSecId = node.id.replace('editableBlock-', '');
+        break;
+      }
+      node = node.parentNode;
+    }
+  }
+  // fallback: 현재 포커스된 editableBlock
+  if(!window._inlineImgTargetSecId) {
+    var active = document.querySelector('.wiki-editable-block.edit-active');
+    if(active && active.id) window._inlineImgTargetSecId = active.id.replace('editableBlock-', '');
+  }
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
     <div class="modal-title">📸 본문 사진 삽입</div>
@@ -2408,29 +2425,61 @@ function submitInlineImageInsert() {
   const file = document.getElementById('modalInlineImgFile').files[0]; if(!file) return;
   const align = window._iiAlign || 'center';
   const width = parseInt(document.getElementById('iiWidth').value) || 260;
+  const targetSecId = window._inlineImgTargetSecId;
   compressFile(file, 900, 900, 0.80, function(dataUrl) {
     const uid = "iimg-" + Date.now();
     const wrapStyle = align === 'left' ? 'display:block; text-align:left;' : align === 'right' ? 'display:block; text-align:right;' : 'display:block; text-align:center;';
     const htmlSnippet = `<div id="wrap-${uid}" class="inline-img-wrap" style="${wrapStyle}" data-align="${align}" contenteditable="false"><img src="${dataUrl}" id="img-${uid}" style="width:${width}px; max-width:100%; border-radius:8px; margin:6px 0; cursor:pointer; display:inline-block;" onclick="openInlineImgFloatToolbar('${uid}', this)"><br><button class="inline-img-del-btn" style="font-size:11px; color:#dc2626; cursor:pointer; background:none; border:none; padding:0; margin-top:2px" onclick="document.getElementById('wrap-${uid}').remove()">[이미지 삭제]</button></div><p><br></p>`;
     closeGlobalModal();
-    const sel = window.getSelection();
+
+    // DOM에 삽입
+    var inserted = false;
+    var targetBlock = targetSecId ? document.getElementById('editableBlock-' + targetSecId) : null;
+    var sel = window.getSelection();
     if(savedSelectionRange) {
       try {
-        const container = savedSelectionRange.startContainer;
+        var container = savedSelectionRange.startContainer;
         if(container && document.contains(container)) {
           sel.removeAllRanges(); sel.addRange(savedSelectionRange);
           document.execCommand('insertHTML', false, htmlSnippet);
-          // DOM에 삽입 후 섹션 데이터 동기화 + 저장
-          setTimeout(function(){ syncAllSectionDataFromDOM(); saveCreatorToFirebase(currentCreator); }, 100);
-          return;
+          inserted = true;
         }
       } catch(err) {}
     }
-    const fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.edit-active');
-    if(fallback) {
-      fallback.innerHTML += htmlSnippet;
-      setTimeout(function(){ syncAllSectionDataFromDOM(); saveCreatorToFirebase(currentCreator); }, 100);
+    if(!inserted) {
+      var fb = targetBlock || document.querySelector('.wiki-editable-block.edit-active');
+      if(fb) { fb.innerHTML += htmlSnippet; inserted = true; targetBlock = fb; }
     }
+
+    if(!inserted) return;
+
+    // 삽입된 블록을 직접 찾아 sec.data에 씀 (syncAllSectionDataFromDOM 대신 정확히 타겟팅)
+    setTimeout(function() {
+      var char = charaverseDatabase[currentCreator].folders.find(function(f){ return f.name === currentFolder; }).characters.find(function(c){ return c.name === currentCharacter; });
+      if(!char) return;
+      // 삽입된 블록의 secId로 정확히 찾기
+      var blockEl = targetSecId ? document.getElementById('editableBlock-' + targetSecId) : null;
+      if(!blockEl) {
+        // execCommand로 삽입된 경우 wrap 부모 블록에서 secId 찾기
+        var wrapEl = document.getElementById('wrap-' + uid);
+        if(wrapEl) {
+          var p = wrapEl.parentNode;
+          while(p && p !== document.body) {
+            if(p.id && p.id.startsWith('editableBlock-')) { blockEl = p; break; }
+            p = p.parentNode;
+          }
+        }
+      }
+      if(blockEl) {
+        var secId = blockEl.id.replace('editableBlock-', '');
+        var sec = char.sections.find(function(s){ return s.id === secId; });
+        if(sec) sec.data = blockEl.innerHTML;
+      } else {
+        // 최후 fallback: 전체 sync
+        syncAllSectionDataFromDOM();
+      }
+      saveCreatorToFirebase(currentCreator);
+    }, 80);
   });
 }
 
