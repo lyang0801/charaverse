@@ -1351,7 +1351,7 @@ function deleteSpoilerContainer(btn) {
 function toggleRadarChartBuildVisiblity() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.useRadar = !char.useRadar;
-  saveToFirebase(); // useRadar 상태 즉시 저장 (누락 시 Firebase 재수신으로 덮어씌워짐)
+  saveCreatorToFirebase(currentCreator); // useRadar 상태 즉시 저장 (누락 시 Firebase 재수신으로 덮어씌워짐)
   renderCharacterDocument();
   if(isCharacterEditMode) {
      isCharacterEditMode = false; toggleCharacterEditMode(); // 상태 토글 동기화 유지
@@ -1363,7 +1363,7 @@ function updateLiveRadarStatValue(statName, val) {
   char.radarData[statName] = parseInt(val);
   document.getElementById(`lblStatVal-${statName}`).textContent = val;
   drawCharacterRadarGraphicSvg(char.radarData);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 }
 
 function renameRadarStat(oldName, newName) {
@@ -1373,7 +1373,7 @@ function renameRadarStat(oldName, newName) {
   Object.keys(char.radarData).forEach(k => { newData[k === oldName ? newName : k] = char.radarData[k]; });
   char.radarData = newData;
   drawCharacterRadarGraphicSvg(char.radarData);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 }
 
 function deleteRadarStat(statName) {
@@ -1381,7 +1381,7 @@ function deleteRadarStat(statName) {
   if(Object.keys(char.radarData).length <= 3) return alert('스탯은 최소 3개 이상 유지해야 합니다.');
   delete char.radarData[statName];
   drawCharacterRadarGraphicSvg(char.radarData);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 }
 
 function addRadarStat() {
@@ -1391,7 +1391,7 @@ function addRadarStat() {
   if(!name || char.radarData[name] !== undefined) return;
   char.radarData[name] = 50;
   drawCharacterRadarGraphicSvg(char.radarData);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 }
 
 function updateRadarChartTitle(val) {
@@ -1399,7 +1399,7 @@ function updateRadarChartTitle(val) {
   char.radarTitle = val;
   const titleEl = document.getElementById('radarChartTitleTextEl');
   if(titleEl) titleEl.textContent = val;
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 }
 
 function drawCharacterRadarGraphicSvg(data) {
@@ -1685,17 +1685,17 @@ function updateCanvasNodeNameInline(id, element) {
   if(!char.relationships || !char.relationships.nodes) return;
   const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.name = element.textContent.trim();
   drawRelationshipArrowsSvg(char.relationships);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 }
 function triggerCanvasNodeImgUpload(id) { if(isCharacterEditMode) document.getElementById(`fileNode-${id}`).click(); }
 function uploadCanvasNodeImgInline(e, id) {
   const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(evt) {
+  compressFile(file, 200, 200, 0.82, function(dataUrl) {
     const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = evt.target.result;
-    saveToFirebase();
+    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = dataUrl;
+    saveCreatorToFirebase(currentCreator);
     initInteractiveCanvasEngine(char.relationships);
-  }; reader.readAsDataURL(file);
+  });
 }
 function addNewRelNodeOnCanvas() {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
@@ -1711,7 +1711,7 @@ function addNewRelNodeOnCanvas() {
 
   const nd = { id: "nd-" + Date.now(), name: "인물", x: 120 + Math.random()*200, y: 120 + Math.random()*150, img: "" };
   char.relationships.nodes.push(nd);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
 
   // 새 노드만 DOM에 추가 (전체 재렌더 금지)
   const viewport = document.getElementById('relCanvasViewport'); if(!viewport) return;
@@ -1737,7 +1737,7 @@ function deleteCanvasNodeEntity(e, id) {
   if(!char.relationships.edges) char.relationships.edges = [];
   char.relationships.nodes = char.relationships.nodes.filter(n => n.id !== id);
   char.relationships.edges = char.relationships.edges.filter(ed => ed.from !== id && ed.to !== id);
-  saveToFirebase();
+  saveCreatorToFirebase(currentCreator);
   initInteractiveCanvasEngine(char.relationships);
 }
 
@@ -1966,7 +1966,7 @@ function submitIntegratedEdgeArrowLink() {
     from: from, to: to, text: document.getElementById('modalEdgeText').value.trim() || "관계",
     color: colorVal, bidirectional: bidir
   });
-  saveToFirebase(); closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
+  saveCreatorToFirebase(currentCreator); closeGlobalModal(); initInteractiveCanvasEngine(char.relationships);
 }
 
 function openEdgeEditPopup(edIdx) {
@@ -2014,12 +2014,12 @@ function saveEdgeFromPopup(edIdx) {
   ed.text = document.getElementById('editEdgeText').value.trim() || '관계';
   ed.color = colorVal;
   ed.bidirectional = document.getElementById('editEdgeBidir').checked;
-  closeGlobalModal(); saveToFirebase(); initInteractiveCanvasEngine(char.relationships);
+  closeGlobalModal(); saveCreatorToFirebase(currentCreator); initInteractiveCanvasEngine(char.relationships);
 }
 function deleteEdgeFromPopup(edIdx) {
   var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
   char.relationships.edges.splice(edIdx, 1);
-  closeGlobalModal(); saveToFirebase(); initInteractiveCanvasEngine(char.relationships);
+  closeGlobalModal(); saveCreatorToFirebase(currentCreator); initInteractiveCanvasEngine(char.relationships);
 }
 
 function syncTableDataFromDOM(secId) {
@@ -2039,14 +2039,9 @@ function insertNewTableRowInlineFromNode(secId, index) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   const sec = char.sections.find(s => s.id === secId);
   sec.data.splice(index + 1, 0, { k: "새 명세명", v: "내용 기입" });
-  // 즉시 DOM 재렌더 (Firebase 응답 대기 없음)
   isCharacterEditMode = true;
   renderCharacterDocument();
-  setTimeout(function(){
-    document.body.classList.add('edit-mode-active');
-    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
-    document.querySelectorAll('.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
-  }, 30);
+  setTimeout(reactivateEditModeUI, 30);
   // 비동기 백그라운드 저장 (실패해도 화면은 이미 업데이트됨)
   saveCreatorToFirebase(currentCreator);
 }
@@ -2059,11 +2054,7 @@ function deleteTableRowInlineFromNode(secId, index) {
   sec.data.splice(index, 1);
   isCharacterEditMode = true;
   renderCharacterDocument();
-  setTimeout(function(){
-    document.body.classList.add('edit-mode-active');
-    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
-    document.querySelectorAll('.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
-  }, 30);
+  setTimeout(reactivateEditModeUI, 30);
   saveCreatorToFirebase(currentCreator);
 }
 
@@ -2079,11 +2070,7 @@ function moveTableRow(secId, index, dir) {
   sec.data[targetIdx] = tmp;
   isCharacterEditMode = true;
   renderCharacterDocument();
-  setTimeout(function(){
-    document.body.classList.add('edit-mode-active');
-    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
-    document.querySelectorAll('.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
-  }, 30);
+  setTimeout(reactivateEditModeUI, 30);
   saveCreatorToFirebase(currentCreator);
 }
 
@@ -2248,6 +2235,33 @@ function openNewTocModalPopup() {
     <div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button><button class="btn primary" onclick="submitAddNewTocFromModal()">목차 추가 확정</button></div>`;
   document.getElementById('globalModalOverlay').style.display = "flex";
 }
+// 렌더 후 편집모드 UI를 복원하는 헬퍼 (renderCharacterDocument 이후 항상 호출)
+function reactivateEditModeUI(scrollToId) {
+  document.body.classList.add('edit-mode-active');
+  document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){
+    el.setAttribute('contenteditable','true'); el.classList.add('edit-active');
+  });
+  document.querySelectorAll('td.row-control-btn-wrap').forEach(function(w){ w.style.display='table-cell'; });
+  document.querySelectorAll('.toc-drag-handle').forEach(function(h){ h.style.display='inline'; });
+  document.querySelectorAll('.toc-link-wrapper').forEach(function(w){ w.setAttribute('draggable','true'); setupTocDragEvents(w); });
+  var char = charaverseDatabase[currentCreator].folders.find(function(f){return f.name===currentFolder;}).characters.find(function(c){return c.name===currentCharacter;});
+  char.sections.forEach(function(sec){
+    var iconD = document.getElementById('tocDelIcon-'+sec.id); if(iconD) iconD.style.display='inline';
+    var iconE = document.getElementById('tocEditIcon-'+sec.id); if(iconE) iconE.style.display='inline';
+  });
+  var relToolbar = document.getElementById('relToolbarWrapperContainer');
+  if(relToolbar) relToolbar.style.display='flex';
+  document.querySelectorAll('.rel-node-drag-handle').forEach(function(h){ h.style.display='flex'; });
+  document.querySelectorAll('.rel-node-x-btn').forEach(function(xb){ xb.style.display='flex'; });
+  document.querySelectorAll('.spoiler-del-btn').forEach(function(btn){ btn.style.display='inline-block'; });
+  var tocAddBtn = document.getElementById('tocAddBtn'); if(tocAddBtn) tocAddBtn.style.display='block';
+  var toolbar = document.getElementById('wikiEditorToolbar'); if(toolbar) toolbar.style.display='flex';
+  if(scrollToId) {
+    var el = document.getElementById(scrollToId);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
 function submitAddNewTocFromModal() {
   const title = document.getElementById('modalNewTocTitle').value.trim(); if(!title) return;
   syncAllSectionDataFromDOM();
@@ -2257,13 +2271,7 @@ function submitAddNewTocFromModal() {
   closeGlobalModal();
   isCharacterEditMode = true;
   renderCharacterDocument();
-  setTimeout(function() {
-    document.body.classList.add('edit-mode-active');
-    document.querySelectorAll('.wiki-editable-block').forEach(function(b){ b.setAttribute('contenteditable','true'); b.classList.add('edit-active'); });
-    document.querySelectorAll('.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
-    const newBlock = document.getElementById('editableBlock-' + newSecId);
-    if(newBlock) newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 60);
+  setTimeout(function(){ reactivateEditModeUI('editableBlock-' + newSecId); }, 50);
   saveCreatorToFirebase(currentCreator);
 }
 function openEditTocModalPopup(secId, currentTitle) {
@@ -2284,10 +2292,7 @@ function submitEditTocFromModal(secId) {
   closeGlobalModal();
   isCharacterEditMode = true;
   renderCharacterDocument();
-  setTimeout(function() {
-    document.body.classList.add('edit-mode-active');
-    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
-  }, 50);
+  setTimeout(reactivateEditModeUI, 50);
   saveCreatorToFirebase(currentCreator);
 }
 function deleteCustomSection(secId) {
@@ -2297,10 +2302,7 @@ function deleteCustomSection(secId) {
   char.sections = char.sections.filter(s => s.id !== secId);
   isCharacterEditMode = true;
   renderCharacterDocument();
-  setTimeout(function() {
-    document.body.classList.add('edit-mode-active');
-    document.querySelectorAll('.wiki-editable-block,.wiki-editable-cell,.wiki-editable-th-cell').forEach(function(el){ el.setAttribute('contenteditable','true'); el.classList.add('edit-active'); });
-  }, 50);
+  setTimeout(reactivateEditModeUI, 50);
   saveCreatorToFirebase(currentCreator);
 }
 
@@ -2406,15 +2408,10 @@ function submitInlineImageInsert() {
   const file = document.getElementById('modalInlineImgFile').files[0]; if(!file) return;
   const align = window._iiAlign || 'center';
   const width = parseInt(document.getElementById('iiWidth').value) || 260;
-  const reader = new FileReader(); reader.onload = function(e) {
+  compressFile(file, 900, 900, 0.80, function(dataUrl) {
     const uid = "iimg-" + Date.now();
-    // 정렬에 따른 wrapper 스타일
-    const wrapStyle = align === 'left'
-      ? 'display:block; text-align:left;'
-      : align === 'right'
-      ? 'display:block; text-align:right;'
-      : 'display:block; text-align:center;';
-    const htmlSnippet = `<div id="wrap-${uid}" class="inline-img-wrap" style="${wrapStyle}" data-align="${align}" contenteditable="false"><img src="${e.target.result}" id="img-${uid}" style="width:${width}px; max-width:100%; border-radius:8px; margin:6px 0; cursor:pointer; display:inline-block;" onclick="openInlineImgFloatToolbar('${uid}', this)"><br><button class="inline-img-del-btn" style="font-size:11px; color:#dc2626; cursor:pointer; background:none; border:none; padding:0; margin-top:2px" onclick="document.getElementById('wrap-${uid}').remove()">[이미지 삭제]</button></div><p><br></p>`;
+    const wrapStyle = align === 'left' ? 'display:block; text-align:left;' : align === 'right' ? 'display:block; text-align:right;' : 'display:block; text-align:center;';
+    const htmlSnippet = `<div id="wrap-${uid}" class="inline-img-wrap" style="${wrapStyle}" data-align="${align}" contenteditable="false"><img src="${dataUrl}" id="img-${uid}" style="width:${width}px; max-width:100%; border-radius:8px; margin:6px 0; cursor:pointer; display:inline-block;" onclick="openInlineImgFloatToolbar('${uid}', this)"><br><button class="inline-img-del-btn" style="font-size:11px; color:#dc2626; cursor:pointer; background:none; border:none; padding:0; margin-top:2px" onclick="document.getElementById('wrap-${uid}').remove()">[이미지 삭제]</button></div><p><br></p>`;
     closeGlobalModal();
     const sel = window.getSelection();
     if(savedSelectionRange) {
@@ -2423,13 +2420,18 @@ function submitInlineImageInsert() {
         if(container && document.contains(container)) {
           sel.removeAllRanges(); sel.addRange(savedSelectionRange);
           document.execCommand('insertHTML', false, htmlSnippet);
+          // DOM에 삽입 후 섹션 데이터 동기화 + 저장
+          setTimeout(function(){ syncAllSectionDataFromDOM(); saveCreatorToFirebase(currentCreator); }, 100);
           return;
         }
       } catch(err) {}
     }
     const fallback = document.querySelector('.wiki-editable-block.edit-active') || document.querySelector('.edit-active');
-    if(fallback) fallback.innerHTML += htmlSnippet;
-  }; reader.readAsDataURL(file);
+    if(fallback) {
+      fallback.innerHTML += htmlSnippet;
+      setTimeout(function(){ syncAllSectionDataFromDOM(); saveCreatorToFirebase(currentCreator); }, 100);
+    }
+  });
 }
 
 /* ── 본문 이미지 클릭 시 플로팅 정렬/크기 툴바 ── */
