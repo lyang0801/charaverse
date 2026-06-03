@@ -69,6 +69,28 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .char-dot{width:6px;height:6px;border-radius:50%;background:var(--border2)}
 .char-dot.active{background:var(--accent)}
 
+/* 로그인 오버레이 */
+#loginOverlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.08)}
+.login-logo{font-family:'Gowun Batang',serif;font-size:28px;color:var(--accent);font-weight:700;margin-bottom:8px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.login-input{width:100%;padding:12px 16px;border:1px solid var(--border2);border-radius:8px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;margin-bottom:14px}
+.login-input:focus{border-color:var(--accent);background:var(--white)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.login-btn:hover{opacity:0.9}
+.login-error{font-size:12px;color:#dc2626;margin-top:8px;min-height:18px}
+
+/* 읽기 전용 배지 */
+#readonlyBadge{display:none;padding:5px 12px;border-radius:20px;background:#fff3cd;color:#856404;border:1px solid #ffc107;font-size:12px;font-weight:600}
+
+/* 친구 섹션 사이드바 */
+.friend-sidebar-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.friend-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:13px;color:var(--muted);cursor:pointer;margin-bottom:2px;justify-content:space-between}
+.friend-item:hover{background:var(--surface);color:var(--text)}
+.friend-item.viewing{color:var(--accent);font-weight:500;background:var(--accent-bg)}
+.friend-del-btn{font-size:10px;color:var(--muted2);cursor:pointer;padding:2px 5px;border-radius:4px;border:1px solid var(--border2);background:none;display:none}
+.friend-item:hover .friend-del-btn{display:inline}
+
 .page-view{display:none}
 .page-view.active{display:block}
 
@@ -368,6 +390,17 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 </head>
 <body>
 
+<!-- 로그인 오버레이 -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">✦ CHARAVERSE</div>
+    <div class="login-sub">닉네임을 입력해 나만의 창작 공간을 만드세요</div>
+    <input type="text" id="loginNicknameInput" class="login-input" placeholder="닉네임 입력 (예: 량량)" maxlength="20" onkeydown="if(event.key==='Enter')submitLogin()">
+    <button class="login-btn" onclick="submitLogin()">시작하기</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
 <nav class="nav">
   <button class="back-btn" id="globalBackBtn" onclick="handleBack()">&larr;</button>
   <span class="logo" onclick="navigate('main')">CHARAVERSE</span>
@@ -380,7 +413,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <option value="antique-sepia">📜 앤티크 세피아</option>
     </select>
     <button class="btn" id="globalPhoneBtn" style="display:none;font-size:16px;padding:6px 10px" onclick="openPhone()" title="핸드폰">📱</button>
+    <span id="readonlyBadge">👁 보기 전용</span>
     <span id="saveStatusIndicator" style="font-size:12px; color:var(--muted); min-width:80px; text-align:right; transition:color 0.2s"></span>
+    <span id="currentUserBadge" style="font-size:12px;color:var(--muted);border:1px solid var(--border2);border-radius:20px;padding:3px 10px;cursor:pointer" onclick="handleLogout()" title="클릭 시 로그아웃"></span>
     <button class="btn primary" id="globalCharacterEditBtn" style="display:none" onclick="toggleCharacterEditMode()">편집 하기</button>
   </div>
 </nav>
@@ -388,11 +423,39 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div class="app-container">
   
   <div id="view-main" class="page-view active layout-main-only">
-    <div class="main-title-area">
-      <h1 class="main-title">창작자 그룹 선택</h1>
-      <button class="btn primary" onclick="openNewCreatorFormPopup()">＋ 창작자 생성</button>
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <!-- 친구 목록 사이드패널 -->
+      <div id="friendPanelSidebar" style="width:160px;flex-shrink:0;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 10px;position:sticky;top:70px">
+        <div class="sidebar-label" style="margin-bottom:10px">내 페이지</div>
+        <div class="char-list-item" id="myPageSidebarItem" onclick="switchToMyPage()" style="font-weight:600;color:var(--accent)">
+          <div class="char-dot active"></div>
+          <span id="myPageSidebarName">나</span>
+        </div>
+        <div class="friend-sidebar-section">
+          <div class="sidebar-label" style="margin-bottom:8px">친구</div>
+          <div id="friendSidebarContainer">
+            <div style="font-size:12px;color:var(--muted2);padding:6px 8px">친구가 없습니다</div>
+          </div>
+          <button class="btn" id="addFriendSidebarBtn" onclick="openAddFriendModal()" style="width:100%;margin-top:8px;font-size:11px;padding:5px 8px">＋ 친구 추가</button>
+        </div>
+      </div>
+      <!-- 메인 컨텐츠 -->
+      <div style="flex:1;min-width:0">
+        <div class="main-title-area">
+          <h1 class="main-title" id="mainPageTitle">내 창작 공간</h1>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="openAddFriendModal()" id="addFriendBtn">👥 친구 추가</button>
+            <button class="btn primary" id="addCreatorBtn" onclick="openNewCreatorFormPopup()">＋ 창작자 생성</button>
+          </div>
+        </div>
+        <!-- 친구 페이지 보기 중 배너 -->
+        <div id="viewingFriendBanner" style="display:none;padding:10px 16px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--accent);align-items:center;justify-content:space-between">
+          <span id="viewingFriendLabel"></span>
+          <button class="btn" style="font-size:12px;padding:4px 10px" onclick="switchToMyPage()">내 페이지로 돌아가기</button>
+        </div>
+        <div class="circle-creator-grid" id="mainCircleCreatorGrid"></div>
+      </div>
     </div>
-    <div class="circle-creator-grid" id="mainCircleCreatorGrid"></div>
   </div>
 
   <div id="view-creator" class="page-view layout-main-only">
@@ -410,7 +473,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     
     <div class="main-title-area" style="border:none; margin-bottom:10px">
       <div class="sidebar-label" style="padding:0; margin:0">📁 보유 세계관 / 장르 카테고리</div>
-      <button class="btn primary" onclick="openFolderAddModal()">＋ 폴더 추가</button>
+      <button class="btn primary" id="folderAddTriggerBtn" onclick="openFolderAddModal()">＋ 폴더 추가</button>
     </div>
     <div class="folder-grid" id="folderGridContainer"></div>
   </div>
@@ -434,7 +497,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div style="display:flex; gap:6px">
          <button class="btn" id="folderEditTriggerModeBtn" onclick="toggleFolderSettingEditPanelUi()">설정/배너 편집</button>
-         <button class="btn primary" onclick="openCharacterAddModal()">＋ 캐릭터 추가</button>
+         <button class="btn primary" id="charAddTriggerBtn" onclick="openCharacterAddModal()">＋ 캐릭터 추가</button>
       </div>
     </div>
 
@@ -628,6 +691,16 @@ let isFolderEditUiActive = false;
 let globalSelectedFontClass = 'canvas-font-notosans';
 let savedSelectionRange = null;
 
+// ── V12: 사용자 시스템 ──
+var currentUser = null;       // 로그인한 본인 닉네임
+var viewingUser = null;       // 현재 보고 있는 페이지 주인 (본인 or 친구)
+var isOwner = true;           // 현재 페이지가 내 것인지 여부
+var currentUserData = {};     // 로컬 복사본 (내 데이터)
+var _myDbRef = null;          // firebase.database().ref('users/'+currentUser)
+var _friendDbRef = null;      // 친구 페이지 열었을 때 ref
+var _lastSaveTime = 0;
+var _relDragging = false;
+
 firebase.initializeApp({
   apiKey: "AIzaSyIfdoomstCV8zakpUWPCrAzCmYQv18",
   authDomain: "charaverse-8cbfc.firebaseapp.com",
@@ -637,74 +710,127 @@ firebase.initializeApp({
   messagingSenderId: "398820095346",
   appId: "1:398820095346:web:a365d10aa98b173c8d9eb"
 });
-var _dbRef = firebase.database().ref('charaverse');
-var _lastSaveTime = 0;
-var _relDragging = false;
-_dbRef.on('value', function(snapshot) {
-  var data = snapshot.val();
-  if (!window._fbReady) {
-    // 최초 로드 시에만 무조건 덮어쓰기
-    if (data) { charaverseDatabase = data; }
-    else { _dbRef.set(charaverseDatabase); }
-    window._fbReady = true;
-    renderCircleCreatorGrid();
-    updateNavbar();
-    return;
-  }
-  // 내가 저장한 직후 15000ms 이내면 Firebase 수신 데이터로 덮어쓰기 완전 차단
-  // (이미지 포함 저장 시 업로드가 느릴 수 있으므로 15초로 연장)
-  var now = Date.now();
-  if (now - _lastSaveTime < 15000) return;
-  // 편집 모드 중이거나 드래그 중에는 데이터/렌더 모두 차단
-  if (isCharacterEditMode || _relDragging) return;
-  // 캐릭터 뷰에서는 현재 보고 있는 캐릭터 데이터를 DOM에서 먼저 sync한 뒤 병합
-  // (다른 사람이 다른 캐릭터를 수정한 경우엔 반영, 내가 보는 캐릭터는 내 DOM 우선)
-  if (data) {
-    if (currentView === 'character' && currentCreator && currentFolder && currentCharacter) {
-      syncAllSectionDataFromDOM();
-      // 내 현재 캐릭터 데이터를 임시 보관 (핸드폰 데이터 포함)
-      var myCreatorData = JSON.parse(JSON.stringify(charaverseDatabase[currentCreator] || {}));
-      // Firebase 데이터로 전체 교체
-      charaverseDatabase = data;
-      // 내가 보고 있는 창작자 데이터만 내 버전으로 복원 (내 편집 보호)
-      if (myCreatorData && Object.keys(myCreatorData).length > 0) {
-        charaverseDatabase[currentCreator] = myCreatorData;
-      }
+
+// ── 로그인 / 사용자 초기화 ──
+function submitLogin() {
+  var nickname = document.getElementById('loginNicknameInput').value.trim();
+  var errEl = document.getElementById('loginError');
+  if (!nickname) { errEl.textContent = '닉네임을 입력해주세요.'; return; }
+  if (nickname.length > 20) { errEl.textContent = '닉네임은 20자 이내여야 합니다.'; return; }
+  // Firebase 특수문자 불가
+  if (/[.#$\[\]\/]/.test(nickname)) { errEl.textContent = '닉네임에 . # $ [ ] / 문자는 사용할 수 없습니다.'; return; }
+  errEl.textContent = '확인 중…';
+  initUserSession(nickname);
+}
+
+function initUserSession(nickname) {
+  currentUser = nickname;
+  viewingUser = nickname;
+  isOwner = true;
+  localStorage.setItem('charaverse_user', nickname);
+
+  // 사용자 데이터 로드 (없으면 마이그레이션 시도 후 신규 생성)
+  _myDbRef = firebase.database().ref('users/' + currentUser);
+
+  _myDbRef.once('value', function(snap) {
+    var data = snap.val();
+    if (data && data.folders !== undefined) {
+      // 기존 V12 구조 데이터 있음 → 로드
+      currentUserData = data.folders ? data : { folders: data.folders || [], bio: data.bio || '', avatar: data.avatar || '', banner: data.banner || '' };
+      // charaverseDatabase도 호환용으로 세팅
+      charaverseDatabase = {};
+      charaverseDatabase[currentUser] = currentUserData;
+      finishLogin();
     } else {
-      // 캐릭터 뷰가 아니어도 핸드폰이 열려있으면 현재 캐릭터 phone 데이터 보호
-      if (document.getElementById('phoneOverlay') && document.getElementById('phoneOverlay').style.display === 'flex'
-          && currentCreator && currentFolder && currentCharacter && data) {
-        var myPhone = null;
-        try {
-          var creatorData = charaverseDatabase[currentCreator];
-          var folderData = creatorData && creatorData.folders && creatorData.folders.find(function(f){ return f.name === currentFolder; });
-          var charData = folderData && folderData.characters && folderData.characters.find(function(c){ return c.name === currentCharacter; });
-          if (charData && charData.phone) myPhone = JSON.parse(JSON.stringify(charData.phone));
-        } catch(e) {}
-        charaverseDatabase = data;
-        if (myPhone) {
-          try {
-            var cr2 = charaverseDatabase[currentCreator];
-            var fl2 = cr2 && cr2.folders && cr2.folders.find(function(f){ return f.name === currentFolder; });
-            var ch2 = fl2 && fl2.characters && fl2.characters.find(function(c){ return c.name === currentCharacter; });
-            if (ch2) ch2.phone = myPhone;
-          } catch(e) {}
-        }
-      } else {
-        charaverseDatabase = data;
-      }
+      // 신규 or V11 마이그레이션 시도
+      attemptMigration(function() { finishLogin(); });
     }
-  }
-  if (currentView === 'main') renderCircleCreatorGrid();
-  else if (currentView === 'creator') renderCreatorProfilePage();
-  else if (currentView === 'folder') renderFolderContentPage();
-  else if (currentView === 'character') renderCharacterDocument();
-});
+  });
+}
+
+function attemptMigration(cb) {
+  // 구 데이터 읽기
+  var migRef = firebase.database().ref('migrationDone/' + currentUser);
+  migRef.once('value', function(snap) {
+    if (snap.val() === true) {
+      // 마이그레이션 완료됐는데 users 데이터 없으면 빈 구조로 시작
+      currentUserData = { bio: 'CHARAVERSE 창작자', avatar: '', banner: '', folders: [] };
+      charaverseDatabase = {}; charaverseDatabase[currentUser] = currentUserData;
+      cb(); return;
+    }
+    // 구 charaverse 노드에서 내 데이터 찾기
+    firebase.database().ref('charaverse/' + currentUser).once('value', function(oldSnap) {
+      var oldData = oldSnap.val();
+      if (oldData) {
+        currentUserData = oldData;
+        _myDbRef.set(currentUserData, function() {
+          migRef.set(true);
+          charaverseDatabase = {}; charaverseDatabase[currentUser] = currentUserData;
+          cb();
+        });
+      } else {
+        // 완전 신규
+        currentUserData = { bio: 'CHARAVERSE 창작자', avatar: '', banner: '', folders: [] };
+        _myDbRef.set(currentUserData, function() {
+          migRef.set(true);
+          charaverseDatabase = {}; charaverseDatabase[currentUser] = currentUserData;
+          cb();
+        });
+      }
+    });
+  });
+}
+
+function finishLogin() {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('currentUserBadge').textContent = '👤 ' + currentUser;
+  // 사이드바 내 이름 업데이트
+  var myNameEl = document.getElementById('myPageSidebarName');
+  if (myNameEl) myNameEl.textContent = currentUser;
+  updateOwnerUI();
+  startMyDataListener();
+  renderCircleCreatorGrid();
+  updateNavbar();
+  loadFriendList();
+}
+
+function handleLogout() {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
+  localStorage.removeItem('charaverse_user');
+  location.reload();
+}
+
+// ── 내 데이터 실시간 감시 ──
+function startMyDataListener() {
+  _myDbRef.on('value', function(snapshot) {
+    if (!window._myFbReady) { window._myFbReady = true; return; } // 최초 로드는 이미 처리됨
+    var data = snapshot.val();
+    var now = Date.now();
+    if (now - _lastSaveTime < 15000) return;
+    if (isCharacterEditMode || _relDragging) return;
+    if (data) {
+      currentUserData = data;
+      charaverseDatabase[currentUser] = currentUserData;
+    }
+    if (viewingUser === currentUser) {
+      if (currentView === 'main') renderCircleCreatorGrid();
+      else if (currentView === 'creator') renderCreatorProfilePage();
+      else if (currentView === 'folder') renderFolderContentPage();
+      else if (currentView === 'character') renderCharacterDocument();
+    }
+  });
+  window._myFbReady = false; // 다음 이벤트부터 처리
+  // 첫 on('value') 발생 시 _myFbReady = true 처리됨
+}
+
+// ── 저장 함수 ──
 window.saveToFirebase = function() {
+  if (!isOwner) return; // 읽기 전용 - 저장 차단
   _lastSaveTime = Date.now();
   var saveIndicator = document.getElementById('saveStatusIndicator');
   if (saveIndicator) { saveIndicator.textContent = '저장 중…'; saveIndicator.style.color = 'var(--muted)'; }
-  _dbRef.set(charaverseDatabase).then(function() {
+  currentUserData = charaverseDatabase[currentUser] || currentUserData;
+  _myDbRef.set(currentUserData).then(function() {
     _lastSaveTime = Date.now();
     if (saveIndicator) { saveIndicator.textContent = '✓ 저장됨'; saveIndicator.style.color = 'var(--teal)'; setTimeout(function(){ saveIndicator.textContent = ''; }, 2500); }
   }).catch(function(err) {
@@ -712,40 +838,173 @@ window.saveToFirebase = function() {
     console.error('Firebase save error:', err);
   });
 };
-// 특정 창작자만 부분 저장 (속도 최적화)
+
 window.saveCreatorToFirebase = function(creatorName) {
+  if (!isOwner) return;
   _lastSaveTime = Date.now();
-  var update = {};
-  update[creatorName] = charaverseDatabase[creatorName];
-  // 저장 상태 표시
+  currentUserData = charaverseDatabase[currentUser] || currentUserData;
   var saveIndicator = document.getElementById('saveStatusIndicator');
   if (saveIndicator) { saveIndicator.textContent = '저장 중…'; saveIndicator.style.color = 'var(--muted)'; }
-  _dbRef.update(update).then(function() {
-    _lastSaveTime = Date.now(); // 저장 완료 후 시간 재갱신
+  _myDbRef.set(currentUserData).then(function() {
+    _lastSaveTime = Date.now();
     if (saveIndicator) { saveIndicator.textContent = '✓ 저장됨'; saveIndicator.style.color = 'var(--teal)'; setTimeout(function(){ saveIndicator.textContent = ''; }, 2500); }
   }).catch(function(err) {
     if (saveIndicator) { saveIndicator.textContent = '⚠ 저장 실패 (데이터가 너무 클 수 있음)'; saveIndicator.style.color = '#dc2626'; }
     console.error('Firebase save error:', err);
   });
 };
+
 window.deleteCreator = function(name) {
+  if (!isOwner) return;
   if (!confirm("'" + name + "' 창작자를 삭제할까요?")) return;
-  delete charaverseDatabase[name]; window._myWrite = true;
-  _dbRef.set(charaverseDatabase).then(function() { clearToMain(); });
+  delete charaverseDatabase[currentUser][name];
+  // V12 구조에서 charaverseDatabase[currentUser]가 곧 currentUserData이므로 재구성
+  // 사실 현재 구조에서 창작자 = currentUser 자체이므로 이 함수는 거의 안 쓰임
+  // 하지만 호환을 위해 유지
+  currentUserData = charaverseDatabase[currentUser] || currentUserData;
+  _myDbRef.set(currentUserData).then(function() { clearToMain(); });
 };
+
 window.deleteFolder = function(folderName) {
+  if (!isOwner) return;
   if (!confirm("'" + folderName + "' 세계관을 삭제할까요?")) return;
   charaverseDatabase[currentCreator].folders = charaverseDatabase[currentCreator].folders.filter(function(f){ return f.name !== folderName; });
-  window._myWrite = true;
-  _dbRef.set(charaverseDatabase).then(function() { navigate('creator', currentCreator); });
+  syncCharaverseToCurrentUserData();
+  _myDbRef.set(currentUserData).then(function() { navigate('creator', currentCreator); });
 };
+
 window.deleteCharacterCard = function(charName) {
+  if (!isOwner) return;
   if (!confirm("'" + charName + "' 캐릭터를 삭제할까요?")) return;
   var folder = charaverseDatabase[currentCreator].folders.find(function(f){ return f.name === currentFolder; });
   folder.characters = folder.characters.filter(function(c){ return c.name !== charName; });
-  window._myWrite = true;
-  _dbRef.set(charaverseDatabase).then(function() { renderFolderContentPage(); });
+  syncCharaverseToCurrentUserData();
+  _myDbRef.set(currentUserData).then(function() { renderFolderContentPage(); });
 };
+
+// charaverseDatabase[currentUser] → currentUserData 동기화 헬퍼
+function syncCharaverseToCurrentUserData() {
+  if (currentUser && charaverseDatabase[currentUser]) {
+    currentUserData = charaverseDatabase[currentUser];
+  }
+}
+
+// ── 친구 시스템 ──
+function loadFriendList() {
+  firebase.database().ref('users/' + currentUser + '/friends').once('value', function(snap) {
+    var friends = snap.val() || {};
+    renderFriendSidebar(Object.keys(friends));
+  });
+}
+
+function renderFriendSidebar(friendNames) {
+  var container = document.getElementById('friendSidebarContainer');
+  if (!container) return;
+  // 내 페이지 사이드바 아이템 강조
+  var myItem = document.getElementById('myPageSidebarItem');
+  if (myItem) {
+    myItem.style.color = (viewingUser === currentUser) ? 'var(--accent)' : 'var(--muted)';
+    myItem.style.fontWeight = (viewingUser === currentUser) ? '600' : '400';
+    myItem.style.background = (viewingUser === currentUser) ? 'var(--accent-bg)' : '';
+  }
+  if (friendNames.length === 0) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--muted2);padding:6px 8px">친구가 없습니다</div>';
+    return;
+  }
+  var html = '';
+  friendNames.forEach(function(name) {
+    var isViewing = (viewingUser === name);
+    html += '<div class="friend-item ' + (isViewing ? 'viewing' : '') + '" onclick="openFriendPage(\'' + name + '\')">' +
+      '<span>👤 ' + name + '</span>' +
+      '<button class="friend-del-btn" onclick="event.stopPropagation();removeFriend(\'' + name + '\')" title="친구 삭제">✕</button>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function openAddFriendModal() {
+  var modal = document.getElementById('modalWindowContent');
+  modal.innerHTML = '<div class="modal-title">👥 친구 추가</div>' +
+    '<div class="modal-body-form"><div class="form-group"><label class="form-label">친구 닉네임 입력</label>' +
+    '<input type="text" id="addFriendInput" class="form-input" placeholder="예: 철수" maxlength="20"></div>' +
+    '<div id="addFriendMsg" style="font-size:12px;min-height:18px;margin-top:4px"></div></div>' +
+    '<div class="modal-footer"><button class="btn" onclick="closeGlobalModal()">취소</button>' +
+    '<button class="btn primary" onclick="submitAddFriend()">추가하기</button></div>';
+  document.getElementById('globalModalOverlay').style.display = 'flex';
+}
+
+function submitAddFriend() {
+  var name = document.getElementById('addFriendInput').value.trim();
+  var msgEl = document.getElementById('addFriendMsg');
+  if (!name) { msgEl.textContent = '닉네임을 입력해주세요.'; msgEl.style.color = '#dc2626'; return; }
+  if (name === currentUser) { msgEl.textContent = '자기 자신은 추가할 수 없습니다.'; msgEl.style.color = '#dc2626'; return; }
+  msgEl.textContent = '검색 중…'; msgEl.style.color = 'var(--muted)';
+  firebase.database().ref('users/' + name).once('value', function(snap) {
+    if (!snap.exists()) {
+      msgEl.textContent = '존재하지 않는 닉네임입니다.'; msgEl.style.color = '#dc2626'; return;
+    }
+    firebase.database().ref('users/' + currentUser + '/friends/' + name).set(true, function() {
+      msgEl.textContent = '✓ ' + name + ' 님을 추가했습니다!'; msgEl.style.color = 'var(--teal)';
+      setTimeout(function() { closeGlobalModal(); loadFriendList(); }, 800);
+    });
+  });
+}
+
+function removeFriend(name) {
+  if (!confirm(name + ' 님을 친구 목록에서 삭제할까요?')) return;
+  firebase.database().ref('users/' + currentUser + '/friends/' + name).remove(function() {
+    loadFriendList();
+  });
+}
+
+function openFriendPage(friendName) {
+  viewingUser = friendName;
+  isOwner = false;
+  updateOwnerUI();
+  // 친구 데이터 읽기 전용 로드
+  if (_friendDbRef) _friendDbRef.off();
+  _friendDbRef = firebase.database().ref('users/' + friendName);
+  _friendDbRef.once('value', function(snap) {
+    var data = snap.val();
+    if (!data) { alert(friendName + ' 님의 데이터가 없습니다.'); viewingUser = currentUser; isOwner = true; updateOwnerUI(); return; }
+    charaverseDatabase[friendName] = data;
+    var banner = document.getElementById('viewingFriendBanner');
+    document.getElementById('viewingFriendLabel').textContent = '👁 ' + friendName + ' 님의 페이지를 보고 있습니다';
+    banner.style.display = 'flex';
+    loadFriendList(); // 사이드바 active 상태 갱신
+    clearToMain();
+  });
+}
+
+function switchToMyPage() {
+  viewingUser = currentUser;
+  isOwner = true;
+  updateOwnerUI();
+  if (_friendDbRef) { _friendDbRef.off(); _friendDbRef = null; }
+  charaverseDatabase[currentUser] = currentUserData;
+  document.getElementById('viewingFriendBanner').style.display = 'none';
+  loadFriendList(); // 사이드바 active 상태 갱신
+  clearToMain();
+}
+
+// ── isOwner에 따라 UI 토글 ──
+function updateOwnerUI() {
+  var badge = document.getElementById('readonlyBadge');
+  var addBtn = document.getElementById('addCreatorBtn');
+  var friendBtn = document.getElementById('addFriendBtn');
+  if (badge) badge.style.display = isOwner ? 'none' : 'inline';
+  if (addBtn) addBtn.style.display = isOwner ? '' : 'none';
+  if (friendBtn) friendBtn.style.display = isOwner ? '' : 'none';
+}
+
+// ── 앱 시작: 저장된 닉네임으로 자동 로그인 ──
+(function() {
+  var saved = localStorage.getItem('charaverse_user');
+  if (saved) {
+    document.getElementById('loginNicknameInput').value = saved;
+    initUserSession(saved);
+  }
+})();
 
 function changeGlobalTheme(val) { document.documentElement.setAttribute('data-theme', val); }
 function changeGlobalFontLayoutEngine(fontClass) {
@@ -842,7 +1101,7 @@ function navigate(view, creator = '', folder = '', character = '', isBackAction 
   document.getElementById('folderEditTriggerModeBtn').textContent = "설정/배너 편집";
 
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
-  document.getElementById('globalCharacterEditBtn').style.display = (view === 'character') ? 'block' : 'none';
+  document.getElementById('globalCharacterEditBtn').style.display = (view === 'character' && isOwner) ? 'block' : 'none';
   document.getElementById('globalPhoneBtn').style.display = (view === 'character') ? 'flex' : 'none';
 
   const bc = document.getElementById('breadcrumbContainer');
@@ -867,27 +1126,80 @@ function handleBack() {
 function clearToMain() { navigationHistory = []; navigate('main'); }
 
 function renderCircleCreatorGrid() {
-  let gridHtml = '';
-  Object.keys(charaverseDatabase).forEach(name => {
-    const current = charaverseDatabase[name];
-    let avatarHtml = current.avatar ? `<img src="${current.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<div class="circle-avatar-placeholder">${name[0]}</div>`;
-    gridHtml += `<div class="circle-creator-node" style="position:relative;">
-      <div onclick="navigate('creator','${name}')">
-        <div class="circle-avatar-wrapper">${avatarHtml}</div>
-        <div class="circle-creator-name">${name}</div>
-      </div>
-      <div style="position:absolute;top:0;right:-8px;">
+  // V12: viewingUser의 창작자 그룹 목록 표시
+  // charaverseDatabase[viewingUser]가 곧 해당 사용자의 루트 데이터
+  // 하지만 기존 구조 호환을 위해 creators 배열 방식 유지
+  // viewingUser 데이터 안의 creators 키 or 직접 charaverseDatabase의 서브키들을 렌더
+  var userData = charaverseDatabase[viewingUser] || {};
+  // 창작자 목록: userData.creators 배열 or 구 호환용 charaverseDatabase의 서브키
+  var creators = userData.creators;
+  // 구 호환: creators 없으면 charaverseDatabase 에서 viewingUser 제외 키들
+  var gridEl = document.getElementById('mainCircleCreatorGrid');
+
+  // ── 타이틀 업데이트 ──
+  var titleEl = document.getElementById('mainPageTitle');
+  if (titleEl) titleEl.textContent = isOwner ? '내 창작 공간' : viewingUser + ' 님의 창작 공간';
+
+  if (creators && creators.length > 0) {
+    let gridHtml = '';
+    creators.forEach(function(cr) {
+      let avatarHtml = cr.avatar ? `<img src="${cr.avatar}" style="width:100%;height:100%;object-fit:cover;">` : `<div class="circle-avatar-placeholder">${cr.name[0]}</div>`;
+      let menuHtml = isOwner ? `<div style="position:absolute;top:0;right:-8px;">
+        <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:22px;height:22px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;">⋮</div>
+        <div style="display:none;position:absolute;right:0;top:26px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;min-width:90px;overflow:hidden;">
+          <div onclick="deleteCreatorV12('${cr.name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
+        </div>
+      </div>` : '';
+      gridHtml += `<div class="circle-creator-node" style="position:relative;">
+        <div onclick="navigate('creator','${cr.name}')">
+          <div class="circle-avatar-wrapper">${avatarHtml}</div>
+          <div class="circle-creator-name">${cr.name}</div>
+        </div>${menuHtml}
+      </div>`;
+    });
+    gridEl.innerHTML = gridHtml;
+  } else if (Object.keys(userData).length > 0 && !creators) {
+    // 구 V11 데이터 호환: charaverseDatabase 직접 키 방식
+    let gridHtml = '';
+    var keys = Object.keys(charaverseDatabase).filter(function(k){ return k !== '__proto__'; });
+    keys.forEach(function(name) {
+      var current = charaverseDatabase[name];
+      if (!current || typeof current !== 'object' || !current.folders) return;
+      let avatarHtml = current.avatar ? `<img src="${current.avatar}" style="width:100%;height:100%;object-fit:cover;">` : `<div class="circle-avatar-placeholder">${name[0]}</div>`;
+      let menuHtml = isOwner ? `<div style="position:absolute;top:0;right:-8px;">
         <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:22px;height:22px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;">⋮</div>
         <div style="display:none;position:absolute;right:0;top:26px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;min-width:90px;overflow:hidden;">
           <div onclick="deleteCreator('${name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
         </div>
-      </div>
-    </div>`;
-  });
-  document.getElementById('mainCircleCreatorGrid').innerHTML = gridHtml || '<div class="empty-placeholder-box">등록된 창작 멤버가 없습니다.</div>';
+      </div>` : '';
+      gridHtml += `<div class="circle-creator-node" style="position:relative;">
+        <div onclick="navigate('creator','${name}')">
+          <div class="circle-avatar-wrapper">${avatarHtml}</div>
+          <div class="circle-creator-name">${name}</div>
+        </div>${menuHtml}
+      </div>`;
+    });
+    gridEl.innerHTML = gridHtml || (isOwner ? '<div class="empty-placeholder-box">＋ 창작자 생성 버튼으로 첫 창작자를 만들어보세요.</div>' : '<div class="empty-placeholder-box">아직 창작자가 없습니다.</div>');
+  } else {
+    gridEl.innerHTML = isOwner ? '<div class="empty-placeholder-box">＋ 창작자 생성 버튼으로 첫 창작자를 만들어보세요.</div>' : '<div class="empty-placeholder-box">아직 창작자가 없습니다.</div>';
+  }
 }
 
+// V12 구조 창작자 삭제 (creators 배열 방식)
+window.deleteCreatorV12 = function(name) {
+  if (!isOwner) return;
+  if (!confirm("'" + name + "' 창작자를 삭제할까요?")) return;
+  var userData = charaverseDatabase[currentUser];
+  if (userData && userData.creators) {
+    userData.creators = userData.creators.filter(function(c){ return c.name !== name; });
+  }
+  delete charaverseDatabase[name];
+  syncCharaverseToCurrentUserData();
+  saveToFirebase(); clearToMain();
+};
+
 function openNewCreatorFormPopup() {
+  if (!isOwner) return;
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
     <div class="modal-title">신규 창작자 그룹 추가</div>
@@ -899,6 +1211,7 @@ function openNewCreatorFormPopup() {
   document.getElementById('globalModalOverlay').style.display = "flex";
 }
 function submitNewCreator() {
+  if (!isOwner) return;
   const name = document.getElementById('addCrName').value.trim(); if(!name) return alert('명칭을 기입해주세요.');
   charaverseDatabase[name] = { bio: document.getElementById('addCrBio').value.trim() || "CHARAVERSE 창작 멤버", avatar: "", banner: "", folders: [] };
   closeGlobalModal(); saveToFirebase(); navigate('creator', name);
@@ -914,26 +1227,33 @@ function renderCreatorProfilePage() {
   bioEl.style.whiteSpace = 'pre-wrap';
   document.getElementById('creatorViewAvatarBox').innerHTML = target.avatar ? `<img src="${target.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="width:100%; height:100%; background:var(--accent-bg); color:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:24px">${currentCreator[0]}</div>`;
   document.getElementById('creatorViewBannerBg').style.backgroundImage = target.banner ? `url('${target.banner}')` : '';
+  // 편집 버튼(⁝) 숨기기 (읽기 전용)
+  var tinyMoreBtn = document.querySelector('#view-creator .tiny-more-btn');
+  if (tinyMoreBtn) tinyMoreBtn.style.display = isOwner ? '' : 'none';
+  // 폴더 추가 버튼 숨기기
+  var folderAddBtn = document.getElementById('folderAddTriggerBtn');
+  if (folderAddBtn) folderAddBtn.style.display = isOwner ? '' : 'none';
 
   let fHtml = '';
   target.folders.forEach((f, idx) => {
-    fHtml += `<div class="folder-card" style="position:relative;">
-      <div onclick="navigate('folder','${currentCreator}','${f.name}')">
-        <div class="folder-card-title">📁 ${f.name}</div><div class="folder-card-desc">${f.desc}</div>
-      </div>
-      <div style="position:absolute;top:10px;right:10px;">
+    const editMenuHtml = isOwner ? `<div style="position:absolute;top:10px;right:10px;">
         <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;">⋮</div>
         <div style="display:none;position:absolute;right:0;top:30px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;min-width:100px;overflow:hidden;">
           <div onclick="openFolderRenameModal('${f.name}')" style="padding:9px 14px;font-size:13px;color:var(--text);cursor:pointer;" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">✏️ 수정</div>
           <div onclick="deleteFolder('${f.name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
         </div>
-      </div>
+      </div>` : '';
+    fHtml += `<div class="folder-card" style="position:relative;">
+      <div onclick="navigate('folder','${currentCreator}','${f.name}')">
+        <div class="folder-card-title">📁 ${f.name}</div><div class="folder-card-desc">${f.desc}</div>
+      </div>${editMenuHtml}
     </div>`;
   });
   document.getElementById('folderGridContainer').innerHTML = fHtml || '<div class="empty-placeholder-box">생성된 폴더 카테고리가 없습니다.</div>';
 }
 
 function openFolderRenameModal(folderName) {
+  if (!isOwner) return;
   const f = charaverseDatabase[currentCreator].folders.find(f => f.name === folderName);
   if (!f) return;
   const modal = document.getElementById('modalWindowContent');
@@ -947,6 +1267,7 @@ function openFolderRenameModal(folderName) {
   document.getElementById('globalModalOverlay').style.display = "flex";
 }
 function submitFolderRename(oldName) {
+  if (!isOwner) return;
   const newName = document.getElementById('renameFolderName').value.trim();
   const newDesc = document.getElementById('renameFolderDesc').value.trim();
   if (!newName) return;
@@ -960,6 +1281,7 @@ function submitFolderRename(oldName) {
 }
 
 function openCreatorEditModal() {
+  if (!isOwner) return;
   const target = charaverseDatabase[currentCreator];
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
@@ -976,14 +1298,13 @@ function openCreatorEditModal() {
 }
 function processModalImageFile(input, mode) {
   const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    if(mode === 'avatar') window.tempAvatarData = e.target.result;
-    if(mode === 'banner') window.tempBannerData = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    if(mode === 'avatar') window.tempAvatarData = url;
+    if(mode === 'banner') window.tempBannerData = url;
+  });
 }
 function submitCreatorEditForm() {
+  if (!isOwner) return;
   const nextName = document.getElementById('editCrName').value.trim(); if(!nextName) return;
   if(nextName !== currentCreator) { charaverseDatabase[nextName] = charaverseDatabase[currentCreator]; delete charaverseDatabase[currentCreator]; currentCreator = nextName; }
   charaverseDatabase[currentCreator].bio = document.getElementById('editCrBio').value.trim();
@@ -993,6 +1314,7 @@ function submitCreatorEditForm() {
 }
 
 function openFolderAddModal() {
+  if (!isOwner) return;
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
     <div class="modal-title">새로운 세계관 / 장르 폴더 생성</div>
@@ -1004,6 +1326,7 @@ function openFolderAddModal() {
   document.getElementById('globalModalOverlay').style.display = "flex";
 }
 function submitAddNewFolder() {
+  if (!isOwner) return;
   const name = document.getElementById('newFolderName').value.trim(); if(!name) return;
   charaverseDatabase[currentCreator].folders.push({ 
     name: name, desc: document.getElementById('newFolderDesc').value.trim(), banner: "", bannerHeight: "150",
@@ -1024,6 +1347,11 @@ function renderFolderContentPage() {
   bBg.style.height = (fData.bannerHeight || 150) + "px";
   bBg.style.backgroundImage = fData.banner ? `url('${fData.banner}')` : '';
   document.getElementById('folderWorldSettingProseView').innerHTML = fData.worldSetting || "설정된 세계관 가이드가 비어있습니다.";
+  // 편집 버튼 isOwner 제어
+  const folderEditBtn = document.getElementById('folderEditTriggerModeBtn');
+  if (folderEditBtn) folderEditBtn.style.display = isOwner ? '' : 'none';
+  const charAddBtn = document.getElementById('charAddTriggerBtn');
+  if (charAddBtn) charAddBtn.style.display = isOwner ? '' : 'none';
 
   const container = document.getElementById('characterViewContentWrapper');
   if(!fData.characters || fData.characters.length === 0) {
@@ -1033,16 +1361,16 @@ function renderFolderContentPage() {
   let cHtml = '<div class="char-card-grid">';
   fData.characters.forEach(c => {
     let symHtml = c.isAvatarImg && c.avatar ? `<img src="${c.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<span class="char-card-symbol-txt">${c.avatar || '👤'}</span>`;
-    cHtml += `<div class="char-card" style="position:relative;">
-      <div onclick="navigate('character','${currentCreator}','${currentFolder}','${c.name}')">
-        <div class="char-card-thumb">${symHtml}</div><div class="char-card-body"><div class="char-card-name">${c.name}</div></div>
-      </div>
-      <div style="position:absolute;top:8px;right:8px;">
+    const deleteMenuHtml = isOwner ? `<div style="position:absolute;top:8px;right:8px;">
         <div onclick="event.stopPropagation();this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,0.9);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;">⋮</div>
         <div style="display:none;position:absolute;right:0;top:28px;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;min-width:90px;overflow:hidden;">
           <div onclick="deleteCharacterCard('${c.name}')" style="padding:9px 14px;font-size:13px;color:#ef4444;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">🗑️ 삭제</div>
         </div>
-      </div>
+      </div>` : '';
+    cHtml += `<div class="char-card" style="position:relative;">
+      <div onclick="navigate('character','${currentCreator}','${currentFolder}','${c.name}')">
+        <div class="char-card-thumb">${symHtml}</div><div class="char-card-body"><div class="char-card-name">${c.name}</div></div>
+      </div>${deleteMenuHtml}
     </div>`;
   });
   container.innerHTML = cHtml + '</div>';
@@ -1082,13 +1410,15 @@ function resizeFolderBannerCover(val) {
 }
 function uploadFolderBannerImage(e) {
   const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(evt) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).banner = evt.target.result;
-    document.getElementById('folderViewBannerBg').style.backgroundImage = `url('${evt.target.result}')`;
-  }; reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).banner = url;
+    document.getElementById('folderViewBannerBg').style.backgroundImage = `url('${url}')`;
+    saveToFirebase();
+  });
 }
 
 function openCharacterAddModal() {
+  if (!isOwner) return;
   const modal = document.getElementById('modalWindowContent');
   modal.innerHTML = `
     <div class="modal-title">새로운 캐릭터 프로필 추가</div>
@@ -1100,6 +1430,7 @@ function openCharacterAddModal() {
   document.getElementById('globalModalOverlay').style.display = "flex";
 }
 function submitAddNewCharacter() {
+  if (!isOwner) return;
   const name = document.getElementById('newCharName').value.trim(); if(!name) return alert("이름을 입력하세요.");
   const _fld = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder);
   if (!_fld.characters) _fld.characters = [];
@@ -1665,7 +1996,7 @@ function setupDragAndDropEvents(handle, el, nodeData, rel) {
     if(isDragging) {
       isDragging = false;
       _lastSaveTime = Date.now();
-      _dbRef.set(charaverseDatabase);
+      saveToFirebase();
       // 저장 완료 후 1500ms 뒤에 드래그 플래그 해제
       setTimeout(() => { _relDragging = false; }, 1500);
     } else { isDragging = false; _relDragging = false; }
@@ -1690,9 +2021,9 @@ function updateCanvasNodeNameInline(id, element) {
 function triggerCanvasNodeImgUpload(id) { if(isCharacterEditMode) document.getElementById(`fileNode-${id}`).click(); }
 function uploadCanvasNodeImgInline(e, id) {
   const file = e.target.files[0]; if(!file) return;
-  compressFile(file, 200, 200, 0.82, function(dataUrl) {
+  uploadFileToCloudinary(file, function(url) {
     const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = dataUrl;
+    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = url;
     saveCreatorToFirebase(currentCreator);
     initInteractiveCanvasEngine(char.relationships);
   });
@@ -2075,6 +2406,7 @@ function moveTableRow(secId, index, dir) {
 }
 
 function toggleCharacterEditMode() {
+  if (!isOwner) return; // 읽기 전용: 편집 불가
   isCharacterEditMode = !isCharacterEditMode;
   const btn = document.getElementById('globalCharacterEditBtn');
   const toolbar = document.getElementById('wikiEditorToolbar');
@@ -2426,7 +2758,7 @@ function submitInlineImageInsert() {
   const align = window._iiAlign || 'center';
   const width = parseInt(document.getElementById('iiWidth').value) || 260;
   const targetSecId = window._inlineImgTargetSecId;
-  compressFile(file, 900, 900, 0.80, function(dataUrl) {
+  uploadFileToCloudinary(file, function(dataUrl) {
     const uid = "iimg-" + Date.now();
     const wrapStyle = align === 'left' ? 'display:block; text-align:left;' : align === 'right' ? 'display:block; text-align:right;' : 'display:block; text-align:center;';
     const htmlSnippet = `<div id="wrap-${uid}" class="inline-img-wrap" style="${wrapStyle}" data-align="${align}" contenteditable="false"><img src="${dataUrl}" id="img-${uid}" style="width:${width}px; max-width:100%; border-radius:8px; margin:6px 0; cursor:pointer; display:inline-block;" onclick="openInlineImgFloatToolbar('${uid}', this)"><br><button class="inline-img-del-btn" style="font-size:11px; color:#dc2626; cursor:pointer; background:none; border:none; padding:0; margin-top:2px" onclick="document.getElementById('wrap-${uid}').remove()">[이미지 삭제]</button></div><p><br></p>`;
@@ -2573,17 +2905,19 @@ function resizeCharacterBannerCover(val) {
 }
 function uploadCharacterCoverImg(e) {
   const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(evt) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).coverImg = evt.target.result;
-    document.getElementById('charDocumentCover').style.backgroundImage = `url('${evt.target.result}')`;
-  }; reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).coverImg = url;
+    document.getElementById('charDocumentCover').style.backgroundImage = `url('${url}')`;
+    saveToFirebase();
+  });
 }
 function uploadCharacterFullShot(event) {
   const file = event.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(e) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = e.target.result;
-    document.getElementById('innerFullShotBox').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
-  }; reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = url;
+    document.getElementById('innerFullShotBox').innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+    saveToFirebase();
+  });
 }
 function clearCharacterFullShotImg() {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = "";
@@ -2713,6 +3047,57 @@ function compressFile(file, maxW, maxH, quality, cb) {
   r.readAsDataURL(file);
 }
 
+/* ===== Cloudinary 업로드 헬퍼 ===== */
+var CLOUDINARY_CLOUD = 'dzmjzvfma';
+var CLOUDINARY_PRESET = 'charaverse';
+var CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload';
+
+/**
+ * uploadToCloudinary(file, cb)
+ * - file: File 객체
+ * - cb(url, err): 성공 시 url(string), 실패 시 err
+ */
+function uploadToCloudinary(file, cb) {
+  var fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_PRESET);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', CLOUDINARY_URL, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var res = JSON.parse(xhr.responseText);
+        cb(res.secure_url, null);
+      } catch(e) { cb(null, e); }
+    } else {
+      cb(null, new Error('Cloudinary upload failed: ' + xhr.status));
+    }
+  };
+  xhr.onerror = function() { cb(null, new Error('Network error')); };
+  xhr.send(fd);
+}
+
+/**
+ * uploadFileToCloudinary(file, cb)
+ * compressFile과 동일한 콜백 시그니처(url)로 사용 가능
+ * 업로드 중 간단한 로딩 표시
+ */
+function uploadFileToCloudinary(file, cb) {
+  if (!file) return;
+  var toast = document.createElement('div');
+  toast.id = '_cld_toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;z-index:99999;pointer-events:none';
+  toast.textContent = '☁️ 이미지 업로드 중...';
+  document.body.appendChild(toast);
+  uploadToCloudinary(file, function(url, err) {
+    var t = document.getElementById('_cld_toast');
+    if (t) t.remove();
+    if (err || !url) { alert('이미지 업로드 실패. 다시 시도해주세요.'); return; }
+    cb(url);
+  });
+}
+/* ===== /Cloudinary ===== */
+
 function getPhoneData() {
   var char = charaverseDatabase[currentCreator].folders
     .find(function(f){ return f.name === currentFolder; }).characters
@@ -2775,9 +3160,7 @@ function showPhoneModal(opts) {
 }
 
 function fileToDataUrl(file, cb) {
-  var reader = new FileReader();
-  reader.onload = function(e) { cb(e.target.result); };
-  reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, cb);
 }
 
 function renderPhone() {
@@ -2799,7 +3182,7 @@ function renderPhone() {
         '<div class="phone-app-icon phone-app-music" onclick="phoneState.screen=\'music\';renderPhone()"><div class="icon-wrap">🎵</div><div class="icon-label">뮤직</div></div>' +
       '</div>' +
       '<div class="phone-home-edit">' +
-        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],800,1400,0.80,function(d){getPhoneData().bg=d;saveToFirebase();renderPhone();});})(event)"></label>' +
+        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){getPhoneData().bg=d;saveToFirebase();renderPhone();});})(event)"></label>' +
       '</div>' +
     '</div>';
   } else if (phoneState.screen === 'msgList') {
@@ -2942,7 +3325,7 @@ function renderChatSettings() {
         '<div class="settings-row"><label>채팅방 이름</label><input id="sRoomName" value="'+(room.name||'')+'"></div>' +
         '<div class="settings-row"><label>프로필 이모지</label><input id="sRoomEmoji" value="'+(room.emoji||'💬')+'"></div>' +
         '<div class="settings-row"><label>프로필 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],200,200,0.82,function(d){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpRoomAvatar=d;})})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpRoomAvatar=d;})})(event)"></label>' +
           avatarPreview +
         '</div>' +
       '</div>' +
@@ -3012,11 +3395,11 @@ function renderAlbumEdit() {
         '<div class="settings-row"><label>이름 (아이디)</label><input id="alName" value="'+(al.name||'')+'"></div>' +
         '<div class="settings-row"><label>소개글 (엔터로 줄바꿈)</label><textarea id="alBio" rows="3" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1916;font-family:inherit;resize:none">'+bioVal+'</textarea></div>' +
         '<div class="settings-row"><label>프로필 사진</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],300,300,0.82,function(d){var p=document.getElementById(\'alAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpAlAvatar=d;})})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){var p=document.getElementById(\'alAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpAlAvatar=d;})})(event)"></label>' +
           avatarPreview +
         '</div>' +
         '<div class="settings-row"><label>배너 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],900,400,0.80,function(d){var p=document.getElementById(\'alBannerPreview\');p.src=d;p.style.display=\'block\';window._tmpAlBanner=d;})})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){var p=document.getElementById(\'alBannerPreview\');p.src=d;p.style.display=\'block\';window._tmpAlBanner=d;})})(event)"></label>' +
           bannerPreview +
         '</div>' +
       '</div>' +
@@ -3063,8 +3446,8 @@ function addNewPostImages(e) {
   var files = Array.from(e.target.files);
   var remaining = files.length;
   files.forEach(function(f) {
-    compressFile(f, 800, 800, 0.78, function(dataUrl) {
-      window._newPostImages.push(dataUrl);
+    uploadFileToCloudinary(f, function(url) {
+      window._newPostImages.push(url);
       remaining--;
       if (remaining === 0) renderNewPost();
     });
@@ -3292,7 +3675,7 @@ function renderMusicPlayerEdit() {
         '<div class="settings-row"><label>기본 재생 시간</label><input id="muDuration" value="'+(mu.duration||'3:45')+'" placeholder="3:45"></div>' +
         '<div class="settings-row"><label>기본 유튜브 링크</label><input id="muYtUrl" value="'+(mu.youtubeUrl||'')+'" placeholder="https://youtu.be/..."></div>' +
         '<div class="settings-row"><label>기본 커버 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'muCoverPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpMuCover=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(url){var p=document.getElementById(\'muCoverPreview\');p.src=url;p.style.display=\'block\';window._tmpMuCover=url;})})(event)"></label>' +
           coverPreview +
         '</div>' +
       '</div>' +
@@ -3336,7 +3719,7 @@ function openAddTrackDetailModal(track, editIdx) {
       '<input id="trkYtUrl" placeholder="유튜브 링크 (선택)" value="'+(track.youtubeUrl||'')+'" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">' +
       '<div style="display:flex;align-items:center;gap:8px">' +
         coverPreview +
-        '<label style="flex:1;padding:8px 12px;background:#f0ecff;border:1px solid #d4c9f7;border-radius:8px;font-size:12px;color:#6b4fd8;cursor:pointer;text-align:center">🎨 커버 이미지<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){window._tmpTrkCover=ev.target.result;var p=document.getElementById(\'trackCoverPreview\');p.src=ev.target.result;p.style.display=\'block\';};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+        '<label style="flex:1;padding:8px 12px;background:#f0ecff;border:1px solid #d4c9f7;border-radius:8px;font-size:12px;color:#6b4fd8;cursor:pointer;text-align:center">🎨 커버 이미지<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(url){window._tmpTrkCover=url;var p=document.getElementById(\'trackCoverPreview\');p.src=url;p.style.display=\'block\';})})(event)"></label>' +
       '</div>' +
     '</div>' +
     '<button class="phone-modal-btn confirm" id="trkConfirm">저장</button>' +
@@ -3532,11 +3915,11 @@ function sendImageMsg(e) {
   var sender = document.getElementById('msgSender');
   var now = new Date();
   var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  compressFile(e.target.files[0], 600, 600, 0.75, function(dataUrl) {
+  uploadFileToCloudinary(e.target.files[0], function(url) {
     var pd = getPhoneData();
     var room = pd.rooms[phoneState.currentRoom];
     if (!room.messages) room.messages = [];
-    room.messages.push({ image: dataUrl, text: '', sender: sender ? sender.value : '나', time: time });
+    room.messages.push({ image: url, text: '', sender: sender ? sender.value : '나', time: time });
     saveToFirebase(); renderChatRoom();
   });
 }
