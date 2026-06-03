@@ -1160,10 +1160,13 @@ function renderCircleCreatorGrid() {
     gridEl.innerHTML = gridHtml;
   } else if (Object.keys(userData).length > 0 && !creators) {
     // 구 V11 데이터 호환: charaverseDatabase 직접 키 방식
+    // !! viewingUser 소유 데이터만 렌더 (친구 데이터 혼입 차단)
     let gridHtml = '';
-    var keys = Object.keys(charaverseDatabase).filter(function(k){ return k !== '__proto__'; });
+    var keys = Object.keys(userData).filter(function(k){
+      return k !== '__proto__' && k !== 'bio' && k !== 'avatar' && k !== 'banner' && k !== 'friends' && k !== 'creators';
+    });
     keys.forEach(function(name) {
-      var current = charaverseDatabase[name];
+      var current = userData[name];
       if (!current || typeof current !== 'object' || !current.folders) return;
       let avatarHtml = current.avatar ? `<img src="${current.avatar}" style="width:100%;height:100%;object-fit:cover;">` : `<div class="circle-avatar-placeholder">${name[0]}</div>`;
       let menuHtml = isOwner ? `<div style="position:absolute;top:0;right:-8px;">
