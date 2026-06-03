@@ -1161,9 +1161,15 @@ function renderCircleCreatorGrid() {
   } else if (Object.keys(userData).length > 0 && !creators) {
     // 구 V11 데이터 호환: charaverseDatabase 직접 키 방식
     let gridHtml = '';
-    var keys = Object.keys(charaverseDatabase).filter(function(k){ return k !== '__proto__'; });
+    // 친구 페이지 구경 시 친구 데이터가 내 목록에 섞이지 않도록 viewingUser 범위로 제한
+    var _ownerDb = charaverseDatabase[viewingUser] || {};
+    var keys = Object.keys(_ownerDb).filter(function(k){ return k !== '__proto__'; });
+    // viewingUser 본인(루트)도 .folders 있으면 창작자로 표시
+    if (Array.isArray(_ownerDb.folders)) {
+      keys = [viewingUser];
+    }
     keys.forEach(function(name) {
-      var current = charaverseDatabase[name];
+      var current = (name === viewingUser) ? _ownerDb : _ownerDb[name];
       if (!current || typeof current !== 'object' || !current.folders) return;
       let avatarHtml = current.avatar ? `<img src="${current.avatar}" style="width:100%;height:100%;object-fit:cover;">` : `<div class="circle-avatar-placeholder">${name[0]}</div>`;
       let menuHtml = isOwner ? `<div style="position:absolute;top:0;right:-8px;">
@@ -1298,12 +1304,10 @@ function openCreatorEditModal() {
 }
 function processModalImageFile(input, mode) {
   const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    if(mode === 'avatar') window.tempAvatarData = e.target.result;
-    if(mode === 'banner') window.tempBannerData = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    if(mode === 'avatar') window.tempAvatarData = url;
+    if(mode === 'banner') window.tempBannerData = url;
+  });
 }
 function submitCreatorEditForm() {
   if (!isOwner) return;
@@ -1412,10 +1416,10 @@ function resizeFolderBannerCover(val) {
 }
 function uploadFolderBannerImage(e) {
   const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(evt) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).banner = evt.target.result;
-    document.getElementById('folderViewBannerBg').style.backgroundImage = `url('${evt.target.result}')`;
-  }; reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).banner = url;
+    document.getElementById('folderViewBannerBg').style.backgroundImage = `url('${url}')`;
+  });
 }
 
 function openCharacterAddModal() {
@@ -2022,9 +2026,9 @@ function updateCanvasNodeNameInline(id, element) {
 function triggerCanvasNodeImgUpload(id) { if(isCharacterEditMode) document.getElementById(`fileNode-${id}`).click(); }
 function uploadCanvasNodeImgInline(e, id) {
   const file = e.target.files[0]; if(!file) return;
-  compressFile(file, 200, 200, 0.82, function(dataUrl) {
+  uploadFileToCloudinary(file, function(url) {
     const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = dataUrl;
+    const nd = char.relationships.nodes.find(n => n.id === id); if(nd) nd.img = url;
     saveCreatorToFirebase(currentCreator);
     initInteractiveCanvasEngine(char.relationships);
   });
@@ -2759,7 +2763,7 @@ function submitInlineImageInsert() {
   const align = window._iiAlign || 'center';
   const width = parseInt(document.getElementById('iiWidth').value) || 260;
   const targetSecId = window._inlineImgTargetSecId;
-  compressFile(file, 900, 900, 0.80, function(dataUrl) {
+  uploadFileToCloudinary(file, function(dataUrl) {
     const uid = "iimg-" + Date.now();
     const wrapStyle = align === 'left' ? 'display:block; text-align:left;' : align === 'right' ? 'display:block; text-align:right;' : 'display:block; text-align:center;';
     const htmlSnippet = `<div id="wrap-${uid}" class="inline-img-wrap" style="${wrapStyle}" data-align="${align}" contenteditable="false"><img src="${dataUrl}" id="img-${uid}" style="width:${width}px; max-width:100%; border-radius:8px; margin:6px 0; cursor:pointer; display:inline-block;" onclick="openInlineImgFloatToolbar('${uid}', this)"><br><button class="inline-img-del-btn" style="font-size:11px; color:#dc2626; cursor:pointer; background:none; border:none; padding:0; margin-top:2px" onclick="document.getElementById('wrap-${uid}').remove()">[이미지 삭제]</button></div><p><br></p>`;
@@ -2906,17 +2910,17 @@ function resizeCharacterBannerCover(val) {
 }
 function uploadCharacterCoverImg(e) {
   const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(evt) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).coverImg = evt.target.result;
-    document.getElementById('charDocumentCover').style.backgroundImage = `url('${evt.target.result}')`;
-  }; reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).coverImg = url;
+    document.getElementById('charDocumentCover').style.backgroundImage = `url('${url}')`;
+  });
 }
 function uploadCharacterFullShot(event) {
   const file = event.target.files[0]; if(!file) return;
-  const reader = new FileReader(); reader.onload = function(e) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = e.target.result;
-    document.getElementById('innerFullShotBox').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
-  }; reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = url;
+    document.getElementById('innerFullShotBox').innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+  });
 }
 function clearCharacterFullShotImg() {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = "";
@@ -3046,6 +3050,42 @@ function compressFile(file, maxW, maxH, quality, cb) {
   r.readAsDataURL(file);
 }
 
+/* ===== Cloudinary 업로드 헬퍼 ===== */
+var CLOUDINARY_CLOUD = 'dzmjzvfma';
+var CLOUDINARY_PRESET = 'charaverse';
+var CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload';
+
+function uploadToCloudinary(file, cb) {
+  var fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_PRESET);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', CLOUDINARY_URL, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try { cb(JSON.parse(xhr.responseText).secure_url, null); }
+      catch(e) { cb(null, e); }
+    } else { cb(null, new Error('Cloudinary ' + xhr.status)); }
+  };
+  xhr.onerror = function() { cb(null, new Error('Network error')); };
+  xhr.send(fd);
+}
+
+function uploadFileToCloudinary(file, cb) {
+  if (!file) return;
+  var toast = document.createElement('div');
+  toast.id = '_cld_toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;z-index:99999;pointer-events:none';
+  toast.textContent = '☁️ 이미지 업로드 중...';
+  document.body.appendChild(toast);
+  uploadToCloudinary(file, function(url, err) {
+    var t = document.getElementById('_cld_toast'); if (t) t.remove();
+    if (err || !url) { alert('이미지 업로드 실패. 다시 시도해주세요.'); return; }
+    cb(url);
+  });
+}
+/* ===== /Cloudinary ===== */
+
 function getPhoneData() {
   var char = charaverseDatabase[currentCreator].folders
     .find(function(f){ return f.name === currentFolder; }).characters
@@ -3108,9 +3148,7 @@ function showPhoneModal(opts) {
 }
 
 function fileToDataUrl(file, cb) {
-  var reader = new FileReader();
-  reader.onload = function(e) { cb(e.target.result); };
-  reader.readAsDataURL(file);
+  uploadFileToCloudinary(file, cb);
 }
 
 function renderPhone() {
@@ -3132,7 +3170,7 @@ function renderPhone() {
         '<div class="phone-app-icon phone-app-music" onclick="phoneState.screen=\'music\';renderPhone()"><div class="icon-wrap">🎵</div><div class="icon-label">뮤직</div></div>' +
       '</div>' +
       '<div class="phone-home-edit">' +
-        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],800,1400,0.80,function(d){getPhoneData().bg=d;saveToFirebase();renderPhone();});})(event)"></label>' +
+        '<label style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px)">🖼️ 배경화면 변경<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){getPhoneData().bg=d;saveToFirebase();renderPhone();});})(event)"></label>' +
       '</div>' +
     '</div>';
   } else if (phoneState.screen === 'msgList') {
@@ -3275,7 +3313,7 @@ function renderChatSettings() {
         '<div class="settings-row"><label>채팅방 이름</label><input id="sRoomName" value="'+(room.name||'')+'"></div>' +
         '<div class="settings-row"><label>프로필 이모지</label><input id="sRoomEmoji" value="'+(room.emoji||'💬')+'"></div>' +
         '<div class="settings-row"><label>프로필 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],200,200,0.82,function(d){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpRoomAvatar=d;})})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){var p=document.getElementById(\'sRoomAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpRoomAvatar=d;})})(event)"></label>' +
           avatarPreview +
         '</div>' +
       '</div>' +
@@ -3345,11 +3383,11 @@ function renderAlbumEdit() {
         '<div class="settings-row"><label>이름 (아이디)</label><input id="alName" value="'+(al.name||'')+'"></div>' +
         '<div class="settings-row"><label>소개글 (엔터로 줄바꿈)</label><textarea id="alBio" rows="3" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1916;font-family:inherit;resize:none">'+bioVal+'</textarea></div>' +
         '<div class="settings-row"><label>프로필 사진</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],300,300,0.82,function(d){var p=document.getElementById(\'alAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpAlAvatar=d;})})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){var p=document.getElementById(\'alAvatarPreview\');p.src=d;p.style.display=\'block\';window._tmpAlAvatar=d;})})(event)"></label>' +
           avatarPreview +
         '</div>' +
         '<div class="settings-row"><label>배너 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;compressFile(e.target.files[0],900,400,0.80,function(d){var p=document.getElementById(\'alBannerPreview\');p.src=d;p.style.display=\'block\';window._tmpAlBanner=d;})})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(d){var p=document.getElementById(\'alBannerPreview\');p.src=d;p.style.display=\'block\';window._tmpAlBanner=d;})})(event)"></label>' +
           bannerPreview +
         '</div>' +
       '</div>' +
@@ -3396,8 +3434,8 @@ function addNewPostImages(e) {
   var files = Array.from(e.target.files);
   var remaining = files.length;
   files.forEach(function(f) {
-    compressFile(f, 800, 800, 0.78, function(dataUrl) {
-      window._newPostImages.push(dataUrl);
+    uploadFileToCloudinary(f, function(url) {
+      window._newPostImages.push(url);
       remaining--;
       if (remaining === 0) renderNewPost();
     });
@@ -3625,7 +3663,7 @@ function renderMusicPlayerEdit() {
         '<div class="settings-row"><label>기본 재생 시간</label><input id="muDuration" value="'+(mu.duration||'3:45')+'" placeholder="3:45"></div>' +
         '<div class="settings-row"><label>기본 유튜브 링크</label><input id="muYtUrl" value="'+(mu.youtubeUrl||'')+'" placeholder="https://youtu.be/..."></div>' +
         '<div class="settings-row"><label>기본 커버 이미지</label>' +
-          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){var p=document.getElementById(\'muCoverPreview\');p.src=ev.target.result;p.style.display=\'block\';window._tmpMuCover=ev.target.result;};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+          '<label class="settings-file-label">📷 파일 선택<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(url){var p=document.getElementById(\'muCoverPreview\');p.src=url;p.style.display=\'block\';window._tmpMuCover=url;});})(event)"></label>' +
           coverPreview +
         '</div>' +
       '</div>' +
@@ -3669,7 +3707,7 @@ function openAddTrackDetailModal(track, editIdx) {
       '<input id="trkYtUrl" placeholder="유튜브 링크 (선택)" value="'+(track.youtubeUrl||'')+'" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">' +
       '<div style="display:flex;align-items:center;gap:8px">' +
         coverPreview +
-        '<label style="flex:1;padding:8px 12px;background:#f0ecff;border:1px solid #d4c9f7;border-radius:8px;font-size:12px;color:#6b4fd8;cursor:pointer;text-align:center">🎨 커버 이미지<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;var r=new FileReader();r.onload=function(ev){window._tmpTrkCover=ev.target.result;var p=document.getElementById(\'trackCoverPreview\');p.src=ev.target.result;p.style.display=\'block\';};r.readAsDataURL(e.target.files[0]);})(event)"></label>' +
+        '<label style="flex:1;padding:8px 12px;background:#f0ecff;border:1px solid #d4c9f7;border-radius:8px;font-size:12px;color:#6b4fd8;cursor:pointer;text-align:center">🎨 커버 이미지<input type="file" accept="image/*" style="display:none" onchange="(function(e){if(!e.target.files[0])return;uploadFileToCloudinary(e.target.files[0],function(url){window._tmpTrkCover=url;var p=document.getElementById(\'trackCoverPreview\');p.src=url;p.style.display=\'block\';});})(event)"></label>' +
       '</div>' +
     '</div>' +
     '<button class="phone-modal-btn confirm" id="trkConfirm">저장</button>' +
@@ -3865,11 +3903,11 @@ function sendImageMsg(e) {
   var sender = document.getElementById('msgSender');
   var now = new Date();
   var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  compressFile(e.target.files[0], 600, 600, 0.75, function(dataUrl) {
+  uploadFileToCloudinary(e.target.files[0], function(url) {
     var pd = getPhoneData();
     var room = pd.rooms[phoneState.currentRoom];
     if (!room.messages) room.messages = [];
-    room.messages.push({ image: dataUrl, text: '', sender: sender ? sender.value : '나', time: time });
+    room.messages.push({ image: url, text: '', sender: sender ? sender.value : '나', time: time });
     saveToFirebase(); renderChatRoom();
   });
 }
