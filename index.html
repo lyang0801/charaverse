@@ -162,29 +162,29 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .edit-mode-active .inline-img-wrap img:hover { outline:2px dashed var(--accent); }
 
 /* ==================== 📁 나무위키식 [스포일러] 인라인 토글 ==================== */
-.spoiler-container { display: inline; }
-.spoiler-blind { display: inline !important; position: static !important; width: auto !important; height: auto !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; }
+.spoiler-container { display: block; border: 1px solid var(--border); border-radius: 6px; margin: 10px 0; overflow: hidden; }
+.spoiler-blind { display: none !important; }
 .spoiler-blind-title { display: none !important; }
 .spoiler-blind-desc { display: none !important; }
 /* 나무위키식 [스포일러] 토글 버튼 */
 .spoiler-wiki-toggle {
-  display: inline; font-weight: bold; color: var(--accent); cursor: pointer;
+  display: inline-block; font-weight: bold; color: var(--accent); cursor: pointer;
   background: var(--accent-bg); border: 1px solid var(--accent-border);
-  border-radius: 3px; padding: 0 5px; font-size: 0.92em;
-  user-select: none; transition: background 0.15s;
+  border-radius: 4px; padding: 2px 8px; font-size: 0.9em;
+  user-select: none; transition: background 0.15s; margin: 6px 8px 4px;
 }
 .spoiler-wiki-toggle:hover { background: var(--accent-border); }
 .spoiler-content {
   display: none;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 5px; padding: 8px 12px; margin: 6px 0;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 10px 14px;
   font-size: 0.95em; line-height: 1.7; color: var(--text);
 }
 .spoiler-container.unveiled .spoiler-content { display: block; pointer-events: auto; opacity: 1; }
-.spoiler-ctrl-bar { display: inline-flex; gap: 4px; margin-left: 6px; align-items: center; vertical-align: middle; }
+.spoiler-ctrl-bar { display: block; padding: 4px 6px; background: var(--white); }
 .spoiler-ctrl-btn { font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid #c24070; background: #fff0f4; color: #c24070; cursor: pointer; font-weight: bold; }
 .spoiler-ctrl-btn:hover { background: #ffe0e8; }
-.spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; }
+.spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; margin-left: 4px; }
 .spoiler-ctrl-btn.del:hover { background: #fde8e8; }
 
 /* ==================== 📊 방사형 차트 레이아웃 그래픽스 컴포넌트 ==================== */
@@ -213,6 +213,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* 전신 비주얼 빈 칸 */
 .full-shot-box { display:flex; flex-direction:column; align-items:center; justify-content:center; border:2px dashed var(--border2); border-radius:10px; background:var(--surface); overflow:hidden; }
+.full-shot-wrapper { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:10px; }
+.full-shot-control-panel { display:none; flex-direction:column; gap:6px; padding:10px; background:var(--surface); border-radius:8px; margin-top:6px; }
 
 /* ==================== 관계도 드래그 캔버스 엔진 ==================== */
 .rel-system-outer{width:100%;margin:20px 0;position:relative}
@@ -2097,29 +2099,56 @@ function renderCharacterDocument() {
 
     if(sec.type === 'image') {
       const w = char.imageWidth || "300"; const h = char.imageHeight || "400";
+      const w2 = char.image2Width || "300"; const h2 = char.image2Height || "400";
       const imgBoxWrapper = document.createElement('div');
       imgBoxWrapper.className = "full-shot-wrapper";
-      imgBoxWrapper.style.textAlign = char.imageAlign || "center";
-      let innerBoxHtml = char.image 
+      imgBoxWrapper.style.cssText = 'display:flex;gap:12px;justify-content:' + (char.imageAlign==='left'?'flex-start':char.imageAlign==='right'?'flex-end':'center') + ';flex-wrap:wrap;';
+
+      // --- 첫 번째 이미지 ---
+      let innerBox1Html = char.image 
         ? `<img src="${char.image}" style="width:100%; height:100%; object-fit:cover;">` 
-        : `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:var(--muted2); gap:8px;">
-            <span style="font-size:40px">🖼️</span>
-            <span style="font-size:12px; font-weight:500;">전신 일러스트 / 이미지</span>
-            <span style="font-size:11px; opacity:0.7;">편집 모드에서 사진을 업로드하세요</span>
-           </div>`;
-      imgBoxWrapper.innerHTML = `
-        <div class="full-shot-box" id="innerFullShotBox" style="width:${w}px; height:${h}px; margin:${char.imageAlign==='center'?'0 auto':(char.imageAlign==='right'?'0 0 0 auto':'0')};">${innerBoxHtml}</div>
-        <div class="full-shot-control-panel" id="fullShotControlPanelBox" style="display:${isCharacterEditMode ? 'flex' : 'none'}">
-          <div style="display:flex; gap:6px">
-            <label class="btn" style="font-size:11px; padding:4px 8px">📸 파일 탐색기<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot(event)"></label>
-            <button class="btn" style="font-size:11px; padding:4px 8px; color:#dc2626" onclick="clearCharacterFullShotImg()">사진 제거</button>
-            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('left')">◀ 좌정렬</button>
-            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('center')">■ 중앙</button>
-            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('right')">▶ 우정렬</button>
-          </div>
-          <div class="slider-row"><span>가로</span><input type="range" min="150" max="600" value="${w}" oninput="resizeFullShotImg(this.value, 'w')"><b id="lblW">${w}px</b></div>
-          <div class="slider-row"><span>세로</span><input type="range" min="200" max="800" value="${h}" oninput="resizeFullShotImg(this.value, 'h')"><b id="lblH">${h}px</b></div>
-        </div>`;
+        : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ①</span></div>`;
+      let slot1 = document.createElement('div');
+      slot1.className = 'full-shot-box'; slot1.id = 'innerFullShotBox';
+      slot1.style.cssText = `width:${w}px;height:${h}px;`;
+      slot1.innerHTML = innerBox1Html;
+
+      // --- 두 번째 이미지 슬롯 ---
+      let innerBox2Html = char.image2
+        ? `<img src="${char.image2}" style="width:100%; height:100%; object-fit:cover;">`
+        : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ②</span>${isCharacterEditMode?'<span style="font-size:10px;opacity:0.6">(편집 모드에서 업로드)</span>':''}</div>`;
+      let slot2 = document.createElement('div');
+      slot2.className = 'full-shot-box'; slot2.id = 'innerFullShotBox2';
+      slot2.style.cssText = `width:${w2}px;height:${h2}px;`;
+      slot2.innerHTML = innerBox2Html;
+
+      imgBoxWrapper.appendChild(slot1);
+      imgBoxWrapper.appendChild(slot2);
+
+      // 편집 컨트롤 패널
+      const ctrl = document.createElement('div');
+      ctrl.className = 'full-shot-control-panel'; ctrl.id = 'fullShotControlPanelBox';
+      ctrl.style.display = isCharacterEditMode ? 'flex' : 'none';
+      ctrl.innerHTML = `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:700;color:var(--muted2);align-self:center">비주얼①</span>
+          <label class="btn" style="font-size:11px;padding:4px 8px">📸 업로드<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot(event)"></label>
+          <button class="btn" style="font-size:11px;padding:4px 8px;color:#dc2626" onclick="clearCharacterFullShotImg()">제거</button>
+          <span style="font-size:11px;font-weight:700;color:var(--muted2);align-self:center;margin-left:8px">비주얼②</span>
+          <label class="btn" style="font-size:11px;padding:4px 8px">📸 업로드<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot2(event)"></label>
+          <button class="btn" style="font-size:11px;padding:4px 8px;color:#dc2626" onclick="clearCharacterFullShotImg2()">제거</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--muted);align-self:center">정렬</span>
+          <button class="btn" style="font-size:11px;padding:3px 6px" onclick="changeCharacterFullShotAlign('left')">◀ 좌</button>
+          <button class="btn" style="font-size:11px;padding:3px 6px" onclick="changeCharacterFullShotAlign('center')">■ 중앙</button>
+          <button class="btn" style="font-size:11px;padding:3px 6px" onclick="changeCharacterFullShotAlign('right')">▶ 우</button>
+        </div>
+        <div class="slider-row"><span>①가로</span><input type="range" min="100" max="600" value="${w}" oninput="resizeFullShotImg(this.value,'w')"><b id="lblW">${w}px</b></div>
+        <div class="slider-row"><span>①세로</span><input type="range" min="150" max="800" value="${h}" oninput="resizeFullShotImg(this.value,'h')"><b id="lblH">${h}px</b></div>
+        <div class="slider-row"><span>②가로</span><input type="range" min="100" max="600" value="${w2}" oninput="resizeFullShotImg2(this.value,'w')"><b id="lblW2">${w2}px</b></div>
+        <div class="slider-row"><span>②세로</span><input type="range" min="150" max="800" value="${h2}" oninput="resizeFullShotImg2(this.value,'h')"><b id="lblH2">${h2}px</b></div>`;
+      imgBoxWrapper.appendChild(ctrl);
       container.appendChild(imgBoxWrapper);
     } 
     else if(sec.type === 'table') {
@@ -2191,36 +2220,37 @@ function renderCharacterDocument() {
 }
 
 function injectSpoilerCtrlBars() {
-  document.querySelectorAll('.spoiler-container').forEach(container => {
-    // 이미 나무위키식 토글 버튼이 있으면 건너뜀
+  document.querySelectorAll('.spoiler-container').forEach(function(container) {
     if(container.querySelector('.spoiler-wiki-toggle')) return;
 
-    // 기존 가림막(spoiler-blind) 숨기기
-    const oldBlind = container.querySelector('.spoiler-blind');
-    if(oldBlind) oldBlind.style.display = 'none';
+    var oldBlind = container.querySelector('.spoiler-blind');
+    if(oldBlind) oldBlind.setAttribute('style','display:none!important');
 
-    // [스포일러] 토글 버튼 생성
-    const toggle = document.createElement('span');
+    if(!container.id) container.id = 'sp-' + Date.now() + '-' + Math.random().toString(36).slice(2,5);
+    var spId = container.id;
+    var isUnveiled = container.classList.contains('unveiled');
+
+    var bar = document.createElement('div');
+    bar.className = 'spoiler-ctrl-bar';
+
+    var toggle = document.createElement('span');
     toggle.className = 'spoiler-wiki-toggle';
-    toggle.textContent = '[스포일러]';
-    const isUnveiled = container.classList.contains('unveiled');
-    if(isUnveiled) toggle.textContent = '[스포일러 ▲ 접기]';
-
+    toggle.textContent = isUnveiled ? '[스포일러 ▲ 접기]' : '[스포일러]';
     toggle.onclick = function() {
-      const unveiled = container.classList.toggle('unveiled');
-      toggle.textContent = unveiled ? '[스포일러 ▲ 접기]' : '[스포일러]';
+      var c = document.getElementById(spId); if(!c) return;
+      var opened = c.classList.toggle('unveiled');
+      toggle.textContent = opened ? '[스포일러 ▲ 접기]' : '[스포일러]';
     };
+    bar.appendChild(toggle);
 
-    // 편집 모드용 삭제 버튼
-    const delBtn = document.createElement('button');
+    var delBtn = document.createElement('button');
     delBtn.className = 'spoiler-ctrl-btn del spoiler-del-btn';
     delBtn.textContent = '🗑 삭제';
     delBtn.style.display = isCharacterEditMode ? 'inline-block' : 'none';
-    delBtn.onclick = function(e) { e.stopPropagation(); deleteSpoilerContainer(delBtn); };
-
-    const bar = document.createElement('span');
-    bar.className = 'spoiler-ctrl-bar';
-    bar.appendChild(toggle);
+    delBtn.onclick = function(e) {
+      e.stopPropagation();
+      var c = document.getElementById(spId); if(c) c.remove();
+    };
     bar.appendChild(delBtn);
 
     container.insertBefore(bar, container.firstChild);
@@ -2889,22 +2919,44 @@ function uploadCharacterFullShot(event) {
   const file = event.target.files[0]; if(!file) return;
   uploadFileToCloudinary(file, function(url) {
     charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = url;
-    document.getElementById('innerFullShotBox').innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+    const box = document.getElementById('innerFullShotBox');
+    if(box) box.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
   });
 }
 function clearCharacterFullShotImg() {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = "";
-  document.getElementById('innerFullShotBox').innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:var(--muted2); gap:8px;"><span style="font-size:40px">🖼️</span><span style="font-size:12px; font-weight:500;">전신 일러스트 / 이미지</span><span style="font-size:11px; opacity:0.7;">편집 모드에서 사진을 업로드하세요</span></div>`;
+  const box = document.getElementById('innerFullShotBox');
+  if(box) box.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ①</span></div>`;
+}
+function uploadCharacterFullShot2(event) {
+  const file = event.target.files[0]; if(!file) return;
+  uploadFileToCloudinary(file, function(url) {
+    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image2 = url;
+    const box = document.getElementById('innerFullShotBox2');
+    if(box) box.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+  });
+}
+function clearCharacterFullShotImg2() {
+  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image2 = "";
+  const box = document.getElementById('innerFullShotBox2');
+  if(box) box.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ②</span></div>`;
 }
 function changeCharacterFullShotAlign(dir) {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).imageAlign = dir;
-  document.getElementById('innerFullShotBox').style.margin = dir === 'center' ? '0 auto' : (dir === 'right' ? '0 0 0 auto' : '0');
+  const wrapper = document.querySelector('.full-shot-wrapper');
+  if(wrapper) wrapper.style.justifyContent = dir === 'center' ? 'center' : (dir === 'right' ? 'flex-end' : 'flex-start');
 }
 function resizeFullShotImg(val, type) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-  const targetBox = document.getElementById('innerFullShotBox');
-  if(type === 'w') { char.imageWidth = val; targetBox.style.width = val + "px"; document.getElementById('lblW').textContent = val + "px"; } 
-  else { char.imageHeight = val; targetBox.style.height = val + "px"; document.getElementById('lblH').textContent = val + "px"; }
+  const box = document.getElementById('innerFullShotBox');
+  if(type === 'w') { char.imageWidth = val; if(box) box.style.width = val + "px"; const l = document.getElementById('lblW'); if(l) l.textContent = val + "px"; }
+  else { char.imageHeight = val; if(box) box.style.height = val + "px"; const l = document.getElementById('lblH'); if(l) l.textContent = val + "px"; }
+}
+function resizeFullShotImg2(val, type) {
+  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
+  const box = document.getElementById('innerFullShotBox2');
+  if(type === 'w') { char.image2Width = val; if(box) box.style.width = val + "px"; const l = document.getElementById('lblW2'); if(l) l.textContent = val + "px"; }
+  else { char.image2Height = val; if(box) box.style.height = val + "px"; const l = document.getElementById('lblH2'); if(l) l.textContent = val + "px"; }
 }
 
 function deleteCharacterCard(charName) {
@@ -3136,7 +3188,7 @@ function renderPhone() {
       '<div class="phone-home-time"><div class="ph-time">' + hm + '</div><div class="ph-date">' + dateStr + '</div></div>' +
       '<div class="phone-apps">' +
         '<div class="phone-app-icon phone-app-msg" onclick="phoneState.screen=\'msgList\';renderPhone()"><div class="icon-wrap">💬</div><div class="icon-label">메시지</div></div>' +
-        '<div class="phone-app-icon phone-app-album" onclick="phoneState.screen=\'album\';renderPhone()"><div class="icon-wrap">📸</div><div class="icon-label">인스타</div></div>' +
+        '<div class="phone-app-icon phone-app-album" onclick="phoneState.screen=\'album\';renderPhone()"><div class="icon-wrap">🖼️</div><div class="icon-label">갤러리</div></div>' +
         '<div class="phone-app-icon phone-app-music" onclick="phoneState.screen=\'music\';renderPhone()"><div class="icon-wrap">🎵</div><div class="icon-label">뮤직</div></div>' +
       '</div>' +
       '<div class="phone-home-edit">' +
@@ -3319,7 +3371,8 @@ function renderAlbum() {
   scr.innerHTML = '<div class="album-app">' +
     '<div class="msg-header">' +
       '<button class="msg-back-btn" onclick="phoneState.screen=\'home\';renderPhone()">←</button>' +
-      '<span class="msg-header-title">인스타</span>' +
+      '<span class="msg-header-title">갤러리</span>' +
+      '<button class="album-edit-btn" onclick="phoneState.screen=\'albumEdit\';renderPhone()" style="margin-left:auto;margin-right:0" title="프로필 편집">✏️ 편집</button>' +
     '</div>' +
     '<div class="album-profile-banner" style="'+bannerStyle+'">' +
     '</div>' +
@@ -3329,7 +3382,6 @@ function renderAlbum() {
         '<div class="album-profile-name">' + (al.name || '이름 없음') + '</div>' +
         '<div class="album-profile-bio">' + (al.bio || '소개글을 입력해보세요').replace(/\n/g,'<br>') + '</div>' +
       '</div>' +
-      '<button class="album-edit-btn" onclick="phoneState.screen=\'albumEdit\';renderPhone()" title="편집">✏️</button>' +
     '</div>' +
     '<div class="album-grid-wrap">' +
       '<div class="album-grid">' + postsHtml + '</div>' +
