@@ -163,14 +163,30 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .edit-mode-active .inline-img-wrap img:hover { outline:2px dashed var(--accent); }
 
 /* ==================== 📁 하위 폴더 분리형 스포일러 가림막 커포넌트 ==================== */
-.spoiler-container { border: 1px dashed #c24070; background: #fff5f8; border-radius: 8px; padding: 14px; margin: 14px 0; position: relative; }
-.spoiler-blind { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, #2d2327, #4a353d); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; z-index: 20; transition: opacity 0.25s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-.spoiler-blind-title { font-weight: bold; font-size: 14px; letter-spacing: 0.05em; color: #ffb3cb; margin-bottom: 2px; }
-.spoiler-blind-desc { font-size: 11px; opacity: 0.75; }
-.spoiler-content { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
+.spoiler-container { border: 1px solid var(--border2); background: var(--surface); border-radius: 6px; padding: 0; margin: 10px 0; position: relative; overflow: hidden; }
+/* 나무위키식 [스포일러] 토글 헤더 */
+.spoiler-blind {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; cursor: pointer;
+  background: var(--surface2); border-bottom: 1px solid var(--border2);
+  border-radius: 6px;
+  position: static !important; width: auto !important; height: auto !important;
+  color: var(--text) !important;
+  flex-direction: row !important; justify-content: flex-start !important;
+  z-index: auto !important; box-shadow: none !important;
+  transition: background 0.15s;
+}
+.spoiler-blind:hover { background: var(--accent-bg); }
+.spoiler-blind-title {
+  font-weight: 700; font-size: 14px; color: var(--text) !important;
+  font-family: inherit; letter-spacing: 0;
+}
+.spoiler-blind-title::before { content: '▶ '; font-size: 10px; color: var(--muted); margin-right: 2px; }
+.spoiler-blind-desc { display: none; }
+.spoiler-content { opacity: 1 !important; pointer-events: none; padding: 12px 14px; transition: none; }
 .spoiler-container.unveiled .spoiler-blind { display: none !important; }
 .spoiler-container.unveiled .spoiler-content { opacity: 1 !important; pointer-events: auto !important; }
-.spoiler-ctrl-bar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+.spoiler-ctrl-bar { display: flex; gap: 6px; padding: 6px 10px; align-items: center; background: var(--surface); border-top: 1px solid var(--border); }
 .spoiler-ctrl-btn { font-size: 11px; padding: 3px 10px; border-radius: 4px; border: 1px solid #c24070; background: #fff0f4; color: #c24070; cursor: pointer; font-weight: bold; }
 .spoiler-ctrl-btn:hover { background: #ffe0e8; }
 .spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; }
@@ -702,7 +718,7 @@ let charaverseDatabase = {
               { id: "sec-0", title: "0. 전신 비주얼 스탠딩", type: "image" },
               { id: "sec-1", title: "1. 기본 정보 명세", type: "table", data: [ {k:"종족", v:"도깨비"}, {k:"나이", v:"수백 년"} ] },
               { id: "sec-2", title: "2. 외형 특징 명세", type: "text", data: "은백색 머리카락과 옅은 회청색 눈동자<a class='wiki-footnote-ref' data-num='1' data-tip='특정 도깨비 가문에서 태어날 때 부여받는 고유의 절대 각인 표식.' href='#fn-link-1' id='fn-ref-1'>[1]</a>를 지녔다." },
-              { id: "sec-3", title: "3. 숨겨진 내막 과거사", type: "text", data: `<div class="spoiler-container" contenteditable="false"><div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)"><div class="spoiler-blind-title">⚠️ 잠겨진 스포일러 주의 구역</div><div class="spoiler-blind-desc">캐릭터의 진상 및 과거 반전 명세를 보려면 클릭하세요.</div></div><div class="spoiler-content" contenteditable="true">사실 늘해는 일반 도깨비 가문 출신이 아닌, 멸망한 신수 혈통의 유일한 생존자라는 사실이 후반부 서사에서 밝혀진다.</div></div>` }
+              { id: "sec-3", title: "3. 숨겨진 내막 과거사", type: "text", data: `<div class="spoiler-container" contenteditable="false"><div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)"><span class="spoiler-blind-title">[스포일러]</span></div><div class="spoiler-content" contenteditable="true">사실 늘해는 일반 도깨비 가문 출신이 아닌, 멸망한 신수 혈통의 유일한 생존자라는 사실이 후반부 서사에서 밝혀진다.</div></div>` }
             ]
           }
         ]
@@ -1655,16 +1671,15 @@ function submitEmbedCustomTableToProseContent() {
 function insertSpoilerBlindTemplateToEditor() {
   saveSelectionCacheRange();
   const html = `
-    <div class="spoiler-container" contenteditable="false" style="border: 1px dashed #c24070; background: #fff5f8; padding:14px; position:relative; border-radius:8px; margin:10px 0;">
+    <div class="spoiler-container" contenteditable="false" style="margin:10px 0;">
       <div class="spoiler-ctrl-bar" style="display:none;">
         <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
         <button class="spoiler-ctrl-btn del spoiler-del-btn" onclick="deleteSpoilerContainer(this)" style="display:none">🗑 블록 삭제</button>
       </div>
-      <div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #2d2327, #4a353d); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:6px; z-index:20;">
-        <span style="font-weight:bold; font-size:13px; color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span>
-        <span style="font-size:11px; opacity:0.8;">클릭 시 가림막이 해제되며 숨겨진 과거사 및 반전 내막이 표출됩니다.</span>
+      <div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)">
+        <span class="spoiler-blind-title">[스포일러]</span>
       </div>
-      <div class="spoiler-content" contenteditable="true" style="opacity:0.2; pointer-events:none;">이곳에 비밀 가림막으로 숨겨둘 과거사/흑막 명세를 집필하세요.</div>
+      <div class="spoiler-content" contenteditable="true">이곳에 숨겨둘 스포일러 내용을 입력하세요.</div>
     </div><p><br></p>`;
   
   const div = document.createElement('div'); div.innerHTML = html;
@@ -2217,41 +2232,16 @@ function renderCharacterDocument() {
       }
     } 
     else if(sec.type === 'text') {
-      var _savedFont = (char && char.fontClass) ? char.fontClass : globalSelectedFontClass;
-      // 나무위키 스타일 [스포일러] 접기 래퍼
-      const colWrap = document.createElement('div');
-      colWrap.className = 'wiki-section-collapsible';
-      colWrap.id = `collapsible-${sec.id}`;
-
-      const toggle = document.createElement('div');
-      toggle.className = 'wiki-section-spoiler-toggle';
-      toggle.setAttribute('data-secid', sec.id);
-      toggle.innerHTML = `<span class="wiki-section-spoiler-arrow">▶</span><span class="spoiler-label-badge">[스포일러]</span>`;
-      toggle.onclick = function() {
-        const body = document.getElementById('secBody-' + sec.id);
-        const isOpen = body.classList.contains('open');
-        body.classList.toggle('open', !isOpen);
-        toggle.classList.toggle('open', !isOpen);
-      };
-
-      const body = document.createElement('div');
-      body.className = 'wiki-section-body';
-      body.id = `secBody-${sec.id}`;
-
       const pBox = document.createElement('div');
+      var _savedFont = (char && char.fontClass) ? char.fontClass : globalSelectedFontClass;
       pBox.className = "prose wiki-editable-block " + _savedFont; pBox.id = `editableBlock-${sec.id}`;
       if(char.baseFontSize) pBox.style.fontSize = char.baseFontSize;
-      pBox.innerHTML = sec.data;
+      pBox.innerHTML = sec.data; container.appendChild(pBox);
 
       // 마크다운 숏컷 실시간 단축키 타이핑 감지 리스너 바인딩
       pBox.addEventListener('keyup', (e) => {
         if(e.key === ' ' || e.key === 'Enter') { executeLiveMarkdownShortcutParser(pBox); }
       });
-
-      body.appendChild(pBox);
-      colWrap.appendChild(toggle);
-      colWrap.appendChild(body);
-      container.appendChild(colWrap);
     }
   });
 
@@ -2283,10 +2273,9 @@ function injectSpoilerCtrlBars() {
     if(!container.querySelector('.spoiler-blind')) {
       const blind = document.createElement('div');
       blind.className = 'spoiler-blind';
-      blind.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#2d2327,#4a353d);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;z-index:20;';
-      blind.innerHTML = `<span style="font-weight:bold;font-size:13px;color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span><span style="font-size:11px;opacity:0.8;">클릭 시 가림막이 해제됩니다.</span>`;
+      blind.innerHTML = `<span class="spoiler-blind-title">[스포일러]</span>`;
       blind.onclick = function(){ unveilSpoilerContainerDirect(blind); };
-      container.appendChild(blind);
+      container.insertBefore(blind, container.querySelector('.spoiler-content'));
     }
 
     // 가림막이 있지만 아직 unveiled 아닌 경우 클릭 시 컨트롤 바 표시 연결
@@ -2495,9 +2484,6 @@ function toggleCharacterEditMode() {
     ctrlWraps.forEach(w => w.style.display = 'table-cell');
     document.querySelectorAll('.toc-drag-handle').forEach(h => { h.style.display = 'inline'; });
     document.querySelectorAll('.toc-link-wrapper').forEach(w => { w.setAttribute('draggable','true'); setupTocDragEvents(w); });
-    // 편집 모드 진입 시 모든 스포일러 섹션 펼치기
-    document.querySelectorAll('.wiki-section-body').forEach(b => { b.classList.add('open'); });
-    document.querySelectorAll('.wiki-section-spoiler-toggle').forEach(t => { t.classList.add('open'); });
     
     charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).sections.forEach(sec => {
       const iconD = document.getElementById(`tocDelIcon-${sec.id}`); if(iconD) iconD.style.display = 'inline';
