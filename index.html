@@ -3914,12 +3914,26 @@ function applyQuoteEdit(uid, style) {
 
 function openQuoteBlockInsertModal() {
   saveSelectionCacheRange();
-  var activeBlock = document.querySelector('.wiki-editable-block.edit-active');
-  if(!activeBlock) return alert('편집 중인 텍스트 블록을 먼저 클릭하세요.');
-  window._quoteTargetBlock = activeBlock.id;
-  // 커서 위치(앵커 노드)를 저장해둠
-  var sel = window.getSelection();
-  window._quoteInsertAnchor = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
+  // 커서 위치로 실제 블록 찾기 (querySelector는 항상 첫 블록 반환하므로 사용 불가)
+  var targetBlock = null;
+  var insertAnchor = null;
+  if(savedSelectionRange) {
+    var node = savedSelectionRange.startContainer;
+    // 텍스트노드면 부모로 올라감
+    if(node.nodeType === 3) node = node.parentNode;
+    // wiki-editable-block 조상 찾기
+    var cur = node;
+    while(cur && cur !== document.body) {
+      if(cur.classList && cur.classList.contains('wiki-editable-block')) { targetBlock = cur; break; }
+      cur = cur.parentNode;
+    }
+    insertAnchor = savedSelectionRange.cloneRange();
+  }
+  // fallback: 첫 번째 edit-active 블록
+  if(!targetBlock) targetBlock = document.querySelector('.wiki-editable-block.edit-active');
+  if(!targetBlock) return alert('편집 중인 텍스트 블록을 먼저 클릭하세요.');
+  window._quoteTargetBlock = targetBlock.id;
+  window._quoteInsertAnchor = insertAnchor;
   var modal = document.getElementById('modalWindowContent');
   var presets = ['#6b4fd8','#e066ff','#f97316','#22c55e','#3b82f6','#ec4899','#64748b','#dc2626','#0ea5e9','#a16207'];
   var bgPresets = ['transparent','#faf5ff','#fff7ed','#f0fdf4','#eff6ff','#fdf2f8','#f8fafc','#fefce8','#fff1f2','#f0f9ff'];
@@ -3974,25 +3988,27 @@ function selectQuoteStyle(style) {
   });
 }
 function _insertNodeAtCursorOrEnd(node, targetBlock) {
-  // savedSelectionRange 또는 _quoteInsertAnchor 이용해 커서 다음에 삽입
   var range = window._quoteInsertAnchor || window.savedSelectionRange;
-  if(range && targetBlock.contains(range.endContainer)) {
-    // 커서 위치의 블록 레벨 조상(직계 자식) 찾기
-    var cur = range.endContainer;
-    while(cur && cur.parentNode !== targetBlock) { cur = cur.parentNode; }
-    if(cur && cur.parentNode === targetBlock) {
-      // cur 뒤에 quoteBlock + <p> 삽입
-      var anchor = cur.nextSibling;
-      var spacer = document.createElement('p'); spacer.innerHTML = '<br>';
-      targetBlock.insertBefore(node, anchor);
-      targetBlock.insertBefore(spacer, anchor);
-      return;
+  if(range && targetBlock.contains(range.startContainer)) {
+    // 커서 위치의 직계 block-level 자식 찾기
+    var anchor = range.startContainer;
+    while(anchor && anchor.parentNode !== targetBlock) anchor = anchor.parentNode;
+    var spacer = document.createElement('p'); spacer.innerHTML = '<br>';
+    if(anchor && anchor.parentNode === targetBlock) {
+      // anchor 다음에 삽입
+      var next = anchor.nextSibling;
+      targetBlock.insertBefore(spacer, next);
+      targetBlock.insertBefore(node, spacer);
+    } else {
+      targetBlock.appendChild(node);
+      targetBlock.appendChild(spacer);
     }
+  } else {
+    // fallback: 맨 끝
+    var spacer = document.createElement('p'); spacer.innerHTML = '<br>';
+    targetBlock.appendChild(node);
+    targetBlock.appendChild(spacer);
   }
-  // fallback: 맨 뒤에 추가
-  targetBlock.appendChild(node);
-  var spacer = document.createElement('p'); spacer.innerHTML = '<br>';
-  targetBlock.appendChild(spacer);
 }
 function insertQuoteBlock() {
   var text = document.getElementById('quoteText').value.trim(); if(!text) return alert('내용을 입력해주세요.');
