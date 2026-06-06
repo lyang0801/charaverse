@@ -163,30 +163,29 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .edit-mode-active .inline-img-wrap img:hover { outline:2px dashed var(--accent); }
 
 /* ==================== 📁 하위 폴더 분리형 스포일러 가림막 커포넌트 ==================== */
-.spoiler-container { border: 1px solid var(--border2); background: var(--surface); border-radius: 6px; padding: 0; margin: 10px 0; position: relative; overflow: hidden; }
+.spoiler-container { border: 1px solid var(--border2); background: var(--surface); border-radius: 6px; margin: 10px 0; overflow: hidden; }
 /* 나무위키식 [스포일러] 토글 헤더 */
 .spoiler-blind {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 6px;
   padding: 7px 14px; cursor: pointer;
-  background: var(--surface2); border-bottom: 1px solid var(--border2);
+  background: var(--surface2); border-bottom: 1px solid transparent;
   border-radius: 6px;
-  position: static !important; width: auto !important; height: auto !important;
-  color: var(--text) !important;
-  flex-direction: row !important; justify-content: flex-start !important;
-  z-index: auto !important; box-shadow: none !important;
+  color: var(--text);
   transition: background 0.15s;
 }
 .spoiler-blind:hover { background: var(--accent-bg); }
 .spoiler-blind-title {
-  font-weight: 700; font-size: 14px; color: var(--text) !important;
-  font-family: inherit; letter-spacing: 0;
+  font-weight: 700; font-size: 14px; color: var(--text);
+  font-family: inherit;
 }
 .spoiler-blind-title::before { content: '▶ '; font-size: 10px; color: var(--muted); margin-right: 2px; }
 .spoiler-blind-desc { display: none; }
-.spoiler-content { opacity: 1 !important; pointer-events: none; padding: 12px 14px; transition: none; }
-.spoiler-container.unveiled .spoiler-blind { display: none !important; }
-.spoiler-container.unveiled .spoiler-content { opacity: 1 !important; pointer-events: auto !important; }
-.spoiler-ctrl-bar { display: flex; gap: 6px; padding: 6px 10px; align-items: center; background: var(--surface); border-top: 1px solid var(--border); }
+/* 기본: 내용 숨김 */
+.spoiler-content { display: none; padding: 12px 14px; pointer-events: none; }
+/* unveiled 상태: 헤더 숨기고 내용 표시 */
+.spoiler-container.unveiled .spoiler-blind { display: none; }
+.spoiler-container.unveiled .spoiler-content { display: block; pointer-events: auto; }
+.spoiler-ctrl-bar { display: flex; gap: 6px; padding: 6px 10px; align-items: center; border-top: 1px solid var(--border); }
 .spoiler-ctrl-btn { font-size: 11px; padding: 3px 10px; border-radius: 4px; border: 1px solid #c24070; background: #fff0f4; color: #c24070; cursor: pointer; font-weight: bold; }
 .spoiler-ctrl-btn:hover { background: #ffe0e8; }
 .spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; }
@@ -1697,9 +1696,8 @@ function unveilSpoilerContainerDirect(blindElement) {
   if(container) {
     container.classList.add('unveiled');
     const content = container.querySelector('.spoiler-content');
-    if(content) { content.style.opacity = "1"; content.style.pointerEvents = "auto"; }
+    if(content) { content.style.display = 'block'; content.style.pointerEvents = 'auto'; }
     blindElement.style.display = 'none';
-    // 컨트롤 바의 가리기 버튼 표시
     const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
     if(ctrlBar) {
       ctrlBar.style.display = 'flex';
@@ -1715,7 +1713,7 @@ function reveilSpoilerContainer(btn) {
     const blind = container.querySelector('.spoiler-blind');
     const content = container.querySelector('.spoiler-content');
     if(blind) blind.style.display = 'flex';
-    if(content) { content.style.opacity = "0.2"; content.style.pointerEvents = "none"; }
+    if(content) { content.style.display = 'none'; content.style.pointerEvents = 'none'; }
     const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
     if(ctrlBar) ctrlBar.style.display = 'none';
   }
@@ -3047,6 +3045,8 @@ function setupTocDragEvents(wrapper) {
     e.preventDefault();
     const destId = wrapper.getAttribute('data-secid');
     if(!tocDragSrcId || tocDragSrcId === destId) return;
+    // 순서 변경 전에 반드시 현재 DOM 내용을 데이터에 저장
+    syncAllSectionDataFromDOM();
     const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
     const srcIdx = char.sections.findIndex(s => s.id === tocDragSrcId);
     const dstIdx = char.sections.findIndex(s => s.id === destId);
