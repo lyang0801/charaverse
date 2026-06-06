@@ -156,35 +156,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .edit-mode-active .quote-del-btn { display:block !important; }
 
 .phone-app-music .icon-wrap { background:linear-gradient(135deg,#1a1a2e,#6b4fd8); }
+.phone-app-gallery .icon-wrap { background:linear-gradient(135deg,#2e8b57,#20b2aa); }
 
 .edit-mode-active .inline-img-del-btn { display:inline-block !important; }
 .edit-mode-active .inline-img-wrap img { outline:2px dashed transparent; transition:outline 0.15s; }
 .edit-mode-active .inline-img-wrap img:hover { outline:2px dashed var(--accent); }
 
-/* ==================== 📁 나무위키식 [스포일러] 인라인 토글 ==================== */
-.spoiler-container { display: block; border: 1px solid var(--border); border-radius: 6px; margin: 10px 0; overflow: hidden; }
-.spoiler-blind { display: none !important; }
-.spoiler-blind-title { display: none !important; }
-.spoiler-blind-desc { display: none !important; }
-/* 나무위키식 [스포일러] 토글 버튼 */
-.spoiler-wiki-toggle {
-  display: inline-block; font-weight: bold; color: var(--accent); cursor: pointer;
-  background: var(--accent-bg); border: 1px solid var(--accent-border);
-  border-radius: 4px; padding: 2px 8px; font-size: 0.9em;
-  user-select: none; transition: background 0.15s; margin: 6px 8px 4px;
-}
-.spoiler-wiki-toggle:hover { background: var(--accent-border); }
-.spoiler-content {
-  display: none;
-  background: var(--surface); border-top: 1px solid var(--border);
-  padding: 10px 14px;
-  font-size: 0.95em; line-height: 1.7; color: var(--text);
-}
-.spoiler-container.unveiled .spoiler-content { display: block; pointer-events: auto; opacity: 1; }
-.spoiler-ctrl-bar { display: block; padding: 4px 6px; background: var(--white); }
-.spoiler-ctrl-btn { font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid #c24070; background: #fff0f4; color: #c24070; cursor: pointer; font-weight: bold; }
+/* ==================== 📁 하위 폴더 분리형 스포일러 가림막 커포넌트 ==================== */
+.spoiler-container { border: 1px dashed #c24070; background: #fff5f8; border-radius: 8px; padding: 14px; margin: 14px 0; position: relative; }
+.spoiler-blind { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, #2d2327, #4a353d); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; z-index: 20; transition: opacity 0.25s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+.spoiler-blind-title { font-weight: bold; font-size: 14px; letter-spacing: 0.05em; color: #ffb3cb; margin-bottom: 2px; }
+.spoiler-blind-desc { font-size: 11px; opacity: 0.75; }
+.spoiler-content { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
+.spoiler-container.unveiled .spoiler-blind { display: none !important; }
+.spoiler-container.unveiled .spoiler-content { opacity: 1 !important; pointer-events: auto !important; }
+.spoiler-ctrl-bar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+.spoiler-ctrl-btn { font-size: 11px; padding: 3px 10px; border-radius: 4px; border: 1px solid #c24070; background: #fff0f4; color: #c24070; cursor: pointer; font-weight: bold; }
 .spoiler-ctrl-btn:hover { background: #ffe0e8; }
-.spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; margin-left: 4px; }
+.spoiler-ctrl-btn.del { border-color: #dc2626; background: #fff0f0; color: #dc2626; }
 .spoiler-ctrl-btn.del:hover { background: #fde8e8; }
 
 /* ==================== 📊 방사형 차트 레이아웃 그래픽스 컴포넌트 ==================== */
@@ -213,8 +202,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* 전신 비주얼 빈 칸 */
 .full-shot-box { display:flex; flex-direction:column; align-items:center; justify-content:center; border:2px dashed var(--border2); border-radius:10px; background:var(--surface); overflow:hidden; }
-.full-shot-wrapper { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:10px; }
-.full-shot-control-panel { display:none; flex-direction:column; gap:6px; padding:10px; background:var(--surface); border-radius:8px; margin-top:6px; }
 
 /* ==================== 관계도 드래그 캔버스 엔진 ==================== */
 .rel-system-outer{width:100%;margin:20px 0;position:relative}
@@ -399,6 +386,49 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .post-comment-submit-full:hover{background:#5a3fc7}
 .post-comment-input{flex:1;border:none;outline:none;font-size:13px;color:#1a1916;font-family:inherit;background:transparent}
 .post-comment-submit{background:none;border:none;color:#6b4fd8;font-size:13px;font-weight:700;cursor:pointer}
+
+/* ── 나무위키 스타일 수정 블록 접기 ── */
+.wiki-section-collapsible { margin: 6px 0 14px; }
+.wiki-section-spoiler-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  cursor: pointer; user-select: none;
+  font-weight: 700; font-size: 14px; color: var(--text);
+  padding: 3px 10px 3px 0;
+}
+.wiki-section-spoiler-toggle .spoiler-label-badge {
+  display: inline-block; background: var(--surface2); border: 1.5px solid var(--border2);
+  color: var(--text); font-weight: 700; font-size: 13px;
+  padding: 1px 10px; border-radius: 4px; letter-spacing: 0.03em;
+  transition: background 0.15s;
+}
+.wiki-section-spoiler-toggle:hover .spoiler-label-badge { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.wiki-section-spoiler-arrow { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+.wiki-section-spoiler-toggle.open .wiki-section-spoiler-arrow { transform: rotate(90deg); }
+.wiki-section-body { display: none; }
+.wiki-section-body.open { display: block; }
+
+/* ── 갤러리 앱 ── */
+.gallery-app { flex:1; display:flex; flex-direction:column; background:#f8f8f8; overflow:hidden; }
+.gallery-header { display:flex; align-items:center; padding:12px 14px; background:#fff; border-bottom:1px solid #e8e8e8; gap:10px; flex-shrink:0; }
+.gallery-header-title { font-size:17px; font-weight:700; flex:1; color:#1a1916; }
+.gallery-grid-wrap { flex:1; overflow-y:auto; padding:8px; }
+.gallery-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; }
+.gallery-grid-cell { aspect-ratio:1; overflow:hidden; background:#e8e8e8; cursor:pointer; border-radius:4px; position:relative; }
+.gallery-grid-cell img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.2s; }
+.gallery-grid-cell:hover img { transform:scale(1.04); }
+.gallery-add-btn { position:absolute; bottom:14px; right:14px; background:#6b4fd8; color:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:24px; cursor:pointer; box-shadow:0 2px 10px rgba(107,79,216,0.45); display:flex; align-items:center; justify-content:center; z-index:5; }
+.gallery-viewer { flex:1; display:flex; flex-direction:column; background:#000; overflow:hidden; }
+.gallery-viewer-img-wrap { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+.gallery-viewer-img-wrap img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+.gallery-viewer-footer { background:#fff; padding:10px 14px 16px; flex-shrink:0; }
+.gallery-viewer-caption { font-size:13px; color:#333; line-height:1.5; margin-bottom:8px; min-height:20px; }
+.gallery-viewer-actions { display:flex; gap:8px; align-items:center; }
+.gallery-viewer-btn { padding:7px 14px; border-radius:8px; border:1px solid #ddd; background:#fff; font-size:12px; font-weight:600; cursor:pointer; color:#333; }
+.gallery-viewer-btn.edit { border-color:#6b4fd8; color:#6b4fd8; background:#f3f0ff; }
+.gallery-viewer-btn.del { border-color:#ef4444; color:#ef4444; background:#fff0f0; }
+.gallery-edit-form { background:#fff; padding:14px; flex:1; overflow-y:auto; }
+.gallery-edit-form textarea { width:100%; padding:9px 12px; border:1px solid #ddd; border-radius:8px; font-size:13px; font-family:inherit; resize:none; color:#1a1916; outline:none; }
+.gallery-edit-form textarea:focus { border-color:#6b4fd8; }
 
 </style>
 </head>
@@ -598,7 +628,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
               <option value="32px">32</option>
             </select>
           </div>
-
           <button style="color:#dc2626" onclick="deleteCurrentCharacter()">❌ 제명</button>
         </div>
 
@@ -1050,6 +1079,7 @@ function applyBaseBlockFontSize(size) {
   if(!currentCreator || !currentFolder || !currentCharacter) return;
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
   char.baseFontSize = size || '';
+  // 현재 열려 있는 모든 prose 블록에 즉시 적용
   document.querySelectorAll('.wiki-editable-block').forEach(function(b){
     b.style.fontSize = size || '';
   });
@@ -1624,7 +1654,18 @@ function submitEmbedCustomTableToProseContent() {
 /* ==================== 👁️ 과거사 분리 및 스포일러 가림막 컴포넌트 엔진 ==================== */
 function insertSpoilerBlindTemplateToEditor() {
   saveSelectionCacheRange();
-  const html = `<div class="spoiler-container" contenteditable="false"><div class="spoiler-content" contenteditable="true">이곳에 스포일러 내용을 작성하세요.</div></div><p><br></p>`;
+  const html = `
+    <div class="spoiler-container" contenteditable="false" style="border: 1px dashed #c24070; background: #fff5f8; padding:14px; position:relative; border-radius:8px; margin:10px 0;">
+      <div class="spoiler-ctrl-bar" style="display:none;">
+        <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
+        <button class="spoiler-ctrl-btn del spoiler-del-btn" onclick="deleteSpoilerContainer(this)" style="display:none">🗑 블록 삭제</button>
+      </div>
+      <div class="spoiler-blind" onclick="unveilSpoilerContainerDirect(this)" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #2d2327, #4a353d); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:6px; z-index:20;">
+        <span style="font-weight:bold; font-size:13px; color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span>
+        <span style="font-size:11px; opacity:0.8;">클릭 시 가림막이 해제되며 숨겨진 과거사 및 반전 내막이 표출됩니다.</span>
+      </div>
+      <div class="spoiler-content" contenteditable="true" style="opacity:0.2; pointer-events:none;">이곳에 비밀 가림막으로 숨겨둘 과거사/흑막 명세를 집필하세요.</div>
+    </div><p><br></p>`;
   
   const div = document.createElement('div'); div.innerHTML = html;
   const sel = window.getSelection();
@@ -1635,28 +1676,37 @@ function insertSpoilerBlindTemplateToEditor() {
     const active = document.querySelector('.edit-active');
     if(active) active.appendChild(div);
   }
-  // 삽입 직후 injectSpoilerCtrlBars 실행해서 토글 버튼 붙이기
-  setTimeout(injectSpoilerCtrlBars, 30);
 }
 function unveilSpoilerContainerDirect(blindElement) {
-  // 레거시 호환: spoiler-blind 클릭 시 처리
-  const container = blindElement.closest ? blindElement.closest('.spoiler-container') : blindElement.parentElement;
+  const container = blindElement.closest('.spoiler-container');
   if(container) {
     container.classList.add('unveiled');
-    const toggle = container.querySelector('.spoiler-wiki-toggle');
-    if(toggle) toggle.textContent = '[스포일러 ▲ 접기]';
+    const content = container.querySelector('.spoiler-content');
+    if(content) { content.style.opacity = "1"; content.style.pointerEvents = "auto"; }
+    blindElement.style.display = 'none';
+    // 컨트롤 바의 가리기 버튼 표시
+    const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
+    if(ctrlBar) {
+      ctrlBar.style.display = 'flex';
+      const delBtn = ctrlBar.querySelector('.spoiler-del-btn');
+      if(delBtn) delBtn.style.display = isCharacterEditMode ? 'inline-block' : 'none';
+    }
   }
 }
 function reveilSpoilerContainer(btn) {
   const container = btn.closest('.spoiler-container');
   if(container) {
     container.classList.remove('unveiled');
-    const toggle = container.querySelector('.spoiler-wiki-toggle');
-    if(toggle) toggle.textContent = '[스포일러]';
+    const blind = container.querySelector('.spoiler-blind');
+    const content = container.querySelector('.spoiler-content');
+    if(blind) blind.style.display = 'flex';
+    if(content) { content.style.opacity = "0.2"; content.style.pointerEvents = "none"; }
+    const ctrlBar = container.querySelector('.spoiler-ctrl-bar');
+    if(ctrlBar) ctrlBar.style.display = 'none';
   }
 }
 function deleteSpoilerContainer(btn) {
-  const container = btn.closest ? btn.closest('.spoiler-container') : btn.parentElement;
+  const container = btn.closest('.spoiler-container');
   if(container) container.remove();
 }
 
@@ -2099,56 +2149,29 @@ function renderCharacterDocument() {
 
     if(sec.type === 'image') {
       const w = char.imageWidth || "300"; const h = char.imageHeight || "400";
-      const w2 = char.image2Width || "300"; const h2 = char.image2Height || "400";
       const imgBoxWrapper = document.createElement('div');
       imgBoxWrapper.className = "full-shot-wrapper";
-      imgBoxWrapper.style.cssText = 'display:flex;gap:12px;justify-content:' + (char.imageAlign==='left'?'flex-start':char.imageAlign==='right'?'flex-end':'center') + ';flex-wrap:wrap;';
-
-      // --- 첫 번째 이미지 ---
-      let innerBox1Html = char.image 
+      imgBoxWrapper.style.textAlign = char.imageAlign || "center";
+      let innerBoxHtml = char.image 
         ? `<img src="${char.image}" style="width:100%; height:100%; object-fit:cover;">` 
-        : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ①</span></div>`;
-      let slot1 = document.createElement('div');
-      slot1.className = 'full-shot-box'; slot1.id = 'innerFullShotBox';
-      slot1.style.cssText = `width:${w}px;height:${h}px;`;
-      slot1.innerHTML = innerBox1Html;
-
-      // --- 두 번째 이미지 슬롯 ---
-      let innerBox2Html = char.image2
-        ? `<img src="${char.image2}" style="width:100%; height:100%; object-fit:cover;">`
-        : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ②</span>${isCharacterEditMode?'<span style="font-size:10px;opacity:0.6">(편집 모드에서 업로드)</span>':''}</div>`;
-      let slot2 = document.createElement('div');
-      slot2.className = 'full-shot-box'; slot2.id = 'innerFullShotBox2';
-      slot2.style.cssText = `width:${w2}px;height:${h2}px;`;
-      slot2.innerHTML = innerBox2Html;
-
-      imgBoxWrapper.appendChild(slot1);
-      imgBoxWrapper.appendChild(slot2);
-
-      // 편집 컨트롤 패널
-      const ctrl = document.createElement('div');
-      ctrl.className = 'full-shot-control-panel'; ctrl.id = 'fullShotControlPanelBox';
-      ctrl.style.display = isCharacterEditMode ? 'flex' : 'none';
-      ctrl.innerHTML = `
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-          <span style="font-size:11px;font-weight:700;color:var(--muted2);align-self:center">비주얼①</span>
-          <label class="btn" style="font-size:11px;padding:4px 8px">📸 업로드<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot(event)"></label>
-          <button class="btn" style="font-size:11px;padding:4px 8px;color:#dc2626" onclick="clearCharacterFullShotImg()">제거</button>
-          <span style="font-size:11px;font-weight:700;color:var(--muted2);align-self:center;margin-left:8px">비주얼②</span>
-          <label class="btn" style="font-size:11px;padding:4px 8px">📸 업로드<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot2(event)"></label>
-          <button class="btn" style="font-size:11px;padding:4px 8px;color:#dc2626" onclick="clearCharacterFullShotImg2()">제거</button>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-          <span style="font-size:11px;color:var(--muted);align-self:center">정렬</span>
-          <button class="btn" style="font-size:11px;padding:3px 6px" onclick="changeCharacterFullShotAlign('left')">◀ 좌</button>
-          <button class="btn" style="font-size:11px;padding:3px 6px" onclick="changeCharacterFullShotAlign('center')">■ 중앙</button>
-          <button class="btn" style="font-size:11px;padding:3px 6px" onclick="changeCharacterFullShotAlign('right')">▶ 우</button>
-        </div>
-        <div class="slider-row"><span>①가로</span><input type="range" min="100" max="600" value="${w}" oninput="resizeFullShotImg(this.value,'w')"><b id="lblW">${w}px</b></div>
-        <div class="slider-row"><span>①세로</span><input type="range" min="150" max="800" value="${h}" oninput="resizeFullShotImg(this.value,'h')"><b id="lblH">${h}px</b></div>
-        <div class="slider-row"><span>②가로</span><input type="range" min="100" max="600" value="${w2}" oninput="resizeFullShotImg2(this.value,'w')"><b id="lblW2">${w2}px</b></div>
-        <div class="slider-row"><span>②세로</span><input type="range" min="150" max="800" value="${h2}" oninput="resizeFullShotImg2(this.value,'h')"><b id="lblH2">${h2}px</b></div>`;
-      imgBoxWrapper.appendChild(ctrl);
+        : `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:var(--muted2); gap:8px;">
+            <span style="font-size:40px">🖼️</span>
+            <span style="font-size:12px; font-weight:500;">전신 일러스트 / 이미지</span>
+            <span style="font-size:11px; opacity:0.7;">편집 모드에서 사진을 업로드하세요</span>
+           </div>`;
+      imgBoxWrapper.innerHTML = `
+        <div class="full-shot-box" id="innerFullShotBox" style="width:${w}px; height:${h}px; margin:${char.imageAlign==='center'?'0 auto':(char.imageAlign==='right'?'0 0 0 auto':'0')};">${innerBoxHtml}</div>
+        <div class="full-shot-control-panel" id="fullShotControlPanelBox" style="display:${isCharacterEditMode ? 'flex' : 'none'}">
+          <div style="display:flex; gap:6px">
+            <label class="btn" style="font-size:11px; padding:4px 8px">📸 파일 탐색기<input type="file" accept="image/*" style="display:none" onchange="uploadCharacterFullShot(event)"></label>
+            <button class="btn" style="font-size:11px; padding:4px 8px; color:#dc2626" onclick="clearCharacterFullShotImg()">사진 제거</button>
+            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('left')">◀ 좌정렬</button>
+            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('center')">■ 중앙</button>
+            <button class="btn" style="font-size:11px; padding:4px 4px" onclick="changeCharacterFullShotAlign('right')">▶ 우정렬</button>
+          </div>
+          <div class="slider-row"><span>가로</span><input type="range" min="150" max="600" value="${w}" oninput="resizeFullShotImg(this.value, 'w')"><b id="lblW">${w}px</b></div>
+          <div class="slider-row"><span>세로</span><input type="range" min="200" max="800" value="${h}" oninput="resizeFullShotImg(this.value, 'h')"><b id="lblH">${h}px</b></div>
+        </div>`;
       container.appendChild(imgBoxWrapper);
     } 
     else if(sec.type === 'table') {
@@ -2194,16 +2217,41 @@ function renderCharacterDocument() {
       }
     } 
     else if(sec.type === 'text') {
-      const pBox = document.createElement('div');
       var _savedFont = (char && char.fontClass) ? char.fontClass : globalSelectedFontClass;
+      // 나무위키 스타일 [스포일러] 접기 래퍼
+      const colWrap = document.createElement('div');
+      colWrap.className = 'wiki-section-collapsible';
+      colWrap.id = `collapsible-${sec.id}`;
+
+      const toggle = document.createElement('div');
+      toggle.className = 'wiki-section-spoiler-toggle';
+      toggle.setAttribute('data-secid', sec.id);
+      toggle.innerHTML = `<span class="wiki-section-spoiler-arrow">▶</span><span class="spoiler-label-badge">[스포일러]</span>`;
+      toggle.onclick = function() {
+        const body = document.getElementById('secBody-' + sec.id);
+        const isOpen = body.classList.contains('open');
+        body.classList.toggle('open', !isOpen);
+        toggle.classList.toggle('open', !isOpen);
+      };
+
+      const body = document.createElement('div');
+      body.className = 'wiki-section-body';
+      body.id = `secBody-${sec.id}`;
+
+      const pBox = document.createElement('div');
       pBox.className = "prose wiki-editable-block " + _savedFont; pBox.id = `editableBlock-${sec.id}`;
       if(char.baseFontSize) pBox.style.fontSize = char.baseFontSize;
-      pBox.innerHTML = sec.data; container.appendChild(pBox);
+      pBox.innerHTML = sec.data;
 
       // 마크다운 숏컷 실시간 단축키 타이핑 감지 리스너 바인딩
       pBox.addEventListener('keyup', (e) => {
         if(e.key === ' ' || e.key === 'Enter') { executeLiveMarkdownShortcutParser(pBox); }
       });
+
+      body.appendChild(pBox);
+      colWrap.appendChild(toggle);
+      colWrap.appendChild(body);
+      container.appendChild(colWrap);
     }
   });
 
@@ -2220,40 +2268,37 @@ function renderCharacterDocument() {
 }
 
 function injectSpoilerCtrlBars() {
-  document.querySelectorAll('.spoiler-container').forEach(function(container) {
-    if(container.querySelector('.spoiler-wiki-toggle')) return;
-
-    var oldBlind = container.querySelector('.spoiler-blind');
-    if(oldBlind) oldBlind.setAttribute('style','display:none!important');
-
-    if(!container.id) container.id = 'sp-' + Date.now() + '-' + Math.random().toString(36).slice(2,5);
-    var spId = container.id;
-    var isUnveiled = container.classList.contains('unveiled');
-
-    var bar = document.createElement('div');
+  document.querySelectorAll('.spoiler-container').forEach(container => {
+    if(container.querySelector('.spoiler-ctrl-bar')) return;
+    const isUnveiled = container.classList.contains('unveiled') || !container.querySelector('.spoiler-blind');
+    const bar = document.createElement('div');
     bar.className = 'spoiler-ctrl-bar';
-
-    var toggle = document.createElement('span');
-    toggle.className = 'spoiler-wiki-toggle';
-    toggle.textContent = isUnveiled ? '[스포일러 ▲ 접기]' : '[스포일러]';
-    toggle.onclick = function() {
-      var c = document.getElementById(spId); if(!c) return;
-      var opened = c.classList.toggle('unveiled');
-      toggle.textContent = opened ? '[스포일러 ▲ 접기]' : '[스포일러]';
-    };
-    bar.appendChild(toggle);
-
-    var delBtn = document.createElement('button');
-    delBtn.className = 'spoiler-ctrl-btn del spoiler-del-btn';
-    delBtn.textContent = '🗑 삭제';
-    delBtn.style.display = isCharacterEditMode ? 'inline-block' : 'none';
-    delBtn.onclick = function(e) {
-      e.stopPropagation();
-      var c = document.getElementById(spId); if(c) c.remove();
-    };
-    bar.appendChild(delBtn);
-
+    bar.style.display = isUnveiled ? 'flex' : 'none';
+    bar.innerHTML = `
+      <button class="spoiler-ctrl-btn" onclick="reveilSpoilerContainer(this)">🙈 다시 가리기</button>
+      <button class="spoiler-ctrl-btn del spoiler-del-btn" onclick="deleteSpoilerContainer(this)" style="display:${isCharacterEditMode?'inline-block':'none'}">🗑 블록 삭제</button>`;
     container.insertBefore(bar, container.firstChild);
+
+    // 가림막이 아예 없는 경우(이미 remove()로 삭제된 구버전 데이터) 가림막 복원
+    if(!container.querySelector('.spoiler-blind')) {
+      const blind = document.createElement('div');
+      blind.className = 'spoiler-blind';
+      blind.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#2d2327,#4a353d);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;z-index:20;';
+      blind.innerHTML = `<span style="font-weight:bold;font-size:13px;color:#ffb3cb;">⚠️ 잠겨진 스포일러 반전 가림막 구역</span><span style="font-size:11px;opacity:0.8;">클릭 시 가림막이 해제됩니다.</span>`;
+      blind.onclick = function(){ unveilSpoilerContainerDirect(blind); };
+      container.appendChild(blind);
+    }
+
+    // 가림막이 있지만 아직 unveiled 아닌 경우 클릭 시 컨트롤 바 표시 연결
+    const blind = container.querySelector('.spoiler-blind');
+    if(blind && !blind._ctrlBound) {
+      blind._ctrlBound = true;
+      const origOnclick = blind.onclick;
+      blind.onclick = function(e) {
+        if(origOnclick) origOnclick.call(this, e);
+        else unveilSpoilerContainerDirect(blind);
+      };
+    }
   });
 }
 
@@ -2438,6 +2483,7 @@ function toggleCharacterEditMode() {
     toolbar.style.display = 'flex'; tocAddBtn.style.display = 'block';
     if(sizePanel) sizePanel.style.display = 'flex';
     if(coverControl) coverControl.style.display = 'flex';
+    // relToolbar는 renderCharacterDocument가 재실행될 때 새로 생성되므로 매번 다시 조회
     const relToolbarNow = document.getElementById('relToolbarWrapperContainer');
     if(relToolbarNow) relToolbarNow.style.display = 'flex';
     if(radarPanel) radarPanel.style.display = 'flex';
@@ -2449,6 +2495,9 @@ function toggleCharacterEditMode() {
     ctrlWraps.forEach(w => w.style.display = 'table-cell');
     document.querySelectorAll('.toc-drag-handle').forEach(h => { h.style.display = 'inline'; });
     document.querySelectorAll('.toc-link-wrapper').forEach(w => { w.setAttribute('draggable','true'); setupTocDragEvents(w); });
+    // 편집 모드 진입 시 모든 스포일러 섹션 펼치기
+    document.querySelectorAll('.wiki-section-body').forEach(b => { b.classList.add('open'); });
+    document.querySelectorAll('.wiki-section-spoiler-toggle').forEach(t => { t.classList.add('open'); });
     
     charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).sections.forEach(sec => {
       const iconD = document.getElementById(`tocDelIcon-${sec.id}`); if(iconD) iconD.style.display = 'inline';
@@ -2919,44 +2968,22 @@ function uploadCharacterFullShot(event) {
   const file = event.target.files[0]; if(!file) return;
   uploadFileToCloudinary(file, function(url) {
     charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = url;
-    const box = document.getElementById('innerFullShotBox');
-    if(box) box.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+    document.getElementById('innerFullShotBox').innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
   });
 }
 function clearCharacterFullShotImg() {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image = "";
-  const box = document.getElementById('innerFullShotBox');
-  if(box) box.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ①</span></div>`;
-}
-function uploadCharacterFullShot2(event) {
-  const file = event.target.files[0]; if(!file) return;
-  uploadFileToCloudinary(file, function(url) {
-    charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image2 = url;
-    const box = document.getElementById('innerFullShotBox2');
-    if(box) box.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
-  });
-}
-function clearCharacterFullShotImg2() {
-  charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).image2 = "";
-  const box = document.getElementById('innerFullShotBox2');
-  if(box) box.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted2);gap:8px;"><span style="font-size:36px">🖼️</span><span style="font-size:11px;font-weight:500;">비주얼 ②</span></div>`;
+  document.getElementById('innerFullShotBox').innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:var(--muted2); gap:8px;"><span style="font-size:40px">🖼️</span><span style="font-size:12px; font-weight:500;">전신 일러스트 / 이미지</span><span style="font-size:11px; opacity:0.7;">편집 모드에서 사진을 업로드하세요</span></div>`;
 }
 function changeCharacterFullShotAlign(dir) {
   charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter).imageAlign = dir;
-  const wrapper = document.querySelector('.full-shot-wrapper');
-  if(wrapper) wrapper.style.justifyContent = dir === 'center' ? 'center' : (dir === 'right' ? 'flex-end' : 'flex-start');
+  document.getElementById('innerFullShotBox').style.margin = dir === 'center' ? '0 auto' : (dir === 'right' ? '0 0 0 auto' : '0');
 }
 function resizeFullShotImg(val, type) {
   const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-  const box = document.getElementById('innerFullShotBox');
-  if(type === 'w') { char.imageWidth = val; if(box) box.style.width = val + "px"; const l = document.getElementById('lblW'); if(l) l.textContent = val + "px"; }
-  else { char.imageHeight = val; if(box) box.style.height = val + "px"; const l = document.getElementById('lblH'); if(l) l.textContent = val + "px"; }
-}
-function resizeFullShotImg2(val, type) {
-  const char = charaverseDatabase[currentCreator].folders.find(f => f.name === currentFolder).characters.find(c => c.name === currentCharacter);
-  const box = document.getElementById('innerFullShotBox2');
-  if(type === 'w') { char.image2Width = val; if(box) box.style.width = val + "px"; const l = document.getElementById('lblW2'); if(l) l.textContent = val + "px"; }
-  else { char.image2Height = val; if(box) box.style.height = val + "px"; const l = document.getElementById('lblH2'); if(l) l.textContent = val + "px"; }
+  const targetBox = document.getElementById('innerFullShotBox');
+  if(type === 'w') { char.imageWidth = val; targetBox.style.width = val + "px"; document.getElementById('lblW').textContent = val + "px"; } 
+  else { char.imageHeight = val; targetBox.style.height = val + "px"; document.getElementById('lblH').textContent = val + "px"; }
 }
 
 function deleteCharacterCard(charName) {
@@ -3049,7 +3076,7 @@ function setupTocDragEvents(wrapper) {
 // ══════════════════════════════════════════
 // 📱 핸드폰 기능
 // ══════════════════════════════════════════
-var phoneState = { screen: 'home', currentRoom: null, currentPost: null, postSlide: 0, replyingTo: null, postEditMode: false };
+var phoneState = { screen: 'home', currentRoom: null, currentPost: null, postSlide: 0, replyingTo: null, galleryIdx: 0, galleryEditIdx: 0 };
 
 /* ── 이미지 압축 유틸리티 (Firebase 저장 최적화) ── */
 function compressImageDataUrl(dataUrl, maxW, maxH, quality, cb) {
@@ -3117,6 +3144,8 @@ function getPhoneData() {
   if (!char.phone.album) char.phone.album = { banner: '', avatar: '', name: '', bio: '', posts: [] };
   if (!char.phone.album.posts) char.phone.album.posts = [];
   if (!char.phone.music) char.phone.music = { title: '노래 제목', artist: '아티스트', cover: '', youtubeUrl: '', duration: '3:45', playlist: [] };
+  if (!char.phone.gallery) char.phone.gallery = { photos: [] };
+  if (!char.phone.gallery.photos) char.phone.gallery.photos = [];
   return char.phone;
 }
 
@@ -3188,7 +3217,8 @@ function renderPhone() {
       '<div class="phone-home-time"><div class="ph-time">' + hm + '</div><div class="ph-date">' + dateStr + '</div></div>' +
       '<div class="phone-apps">' +
         '<div class="phone-app-icon phone-app-msg" onclick="phoneState.screen=\'msgList\';renderPhone()"><div class="icon-wrap">💬</div><div class="icon-label">메시지</div></div>' +
-        '<div class="phone-app-icon phone-app-album" onclick="phoneState.screen=\'album\';renderPhone()"><div class="icon-wrap">🖼️</div><div class="icon-label">갤러리</div></div>' +
+        '<div class="phone-app-icon phone-app-album" onclick="phoneState.screen=\'album\';renderPhone()"><div class="icon-wrap">📸</div><div class="icon-label">인스타</div></div>' +
+        '<div class="phone-app-icon phone-app-gallery" onclick="phoneState.screen=\'gallery\';renderPhone()"><div class="icon-wrap">🖼️</div><div class="icon-label">갤러리</div></div>' +
         '<div class="phone-app-icon phone-app-music" onclick="phoneState.screen=\'music\';renderPhone()"><div class="icon-wrap">🎵</div><div class="icon-label">뮤직</div></div>' +
       '</div>' +
       '<div class="phone-home-edit">' +
@@ -3213,6 +3243,12 @@ function renderPhone() {
     renderMusicPlayer();
   } else if (phoneState.screen === 'musicEdit') {
     renderMusicPlayerEdit();
+  } else if (phoneState.screen === 'gallery') {
+    renderGallery();
+  } else if (phoneState.screen === 'galleryViewer') {
+    renderGalleryViewer();
+  } else if (phoneState.screen === 'galleryEdit') {
+    renderGalleryEdit();
   }
 }
 
@@ -3371,8 +3407,7 @@ function renderAlbum() {
   scr.innerHTML = '<div class="album-app">' +
     '<div class="msg-header">' +
       '<button class="msg-back-btn" onclick="phoneState.screen=\'home\';renderPhone()">←</button>' +
-      '<span class="msg-header-title">갤러리</span>' +
-      '<button class="album-edit-btn" onclick="phoneState.screen=\'albumEdit\';renderPhone()" style="margin-left:auto;margin-right:0" title="프로필 편집">✏️ 편집</button>' +
+      '<span class="msg-header-title">인스타</span>' +
     '</div>' +
     '<div class="album-profile-banner" style="'+bannerStyle+'">' +
     '</div>' +
@@ -3382,6 +3417,7 @@ function renderAlbum() {
         '<div class="album-profile-name">' + (al.name || '이름 없음') + '</div>' +
         '<div class="album-profile-bio">' + (al.bio || '소개글을 입력해보세요').replace(/\n/g,'<br>') + '</div>' +
       '</div>' +
+      '<button class="album-edit-btn" onclick="phoneState.screen=\'albumEdit\';renderPhone()" title="편집">✏️</button>' +
     '</div>' +
     '<div class="album-grid-wrap">' +
       '<div class="album-grid">' + postsHtml + '</div>' +
@@ -3489,36 +3525,24 @@ function renderPostDetail() {
   var al = pd.album;
   var postAvatarHtml = al.avatar ? '<img src="'+al.avatar+'" style="width:100%;height:100%;object-fit:cover;">' : '🖼️';
   var postUsername = al.name || '이름 없음';
-  var isEditMode = !!phoneState.postEditMode;
-
   // 댓글
   var commentsHtml = (post.comments || []).map(function(c, ci) {
     var repliesHtml = (c.replies || []).map(function(rep, ri) {
-      return '<div class="post-reply"><span class="post-comment-author">'+rep.author+'</span>'+rep.text+
-        (isEditMode ? '<span class="post-comment-del" onclick="deleteReply('+ci+','+ri+')">✕</span>' : '') +
-      '</div>';
+      return '<div class="post-reply"><span class="post-comment-author">'+rep.author+'</span>'+rep.text+'<span class="post-comment-del" onclick="deleteReply('+ci+','+ri+')">✕</span></div>';
     }).join('');
     return '<div class="post-comment">' +
       '<span class="post-comment-author">'+c.author+'</span>'+c.text+
-      (isEditMode ? '<span class="post-comment-reply-btn" onclick="phoneState.replyingTo='+ci+';renderPostDetail()">답글</span>' +
-        '<span class="post-comment-del" onclick="deletePostComment('+ci+')">✕</span>' : '') +
+      '<span class="post-comment-reply-btn" onclick="phoneState.replyingTo='+ci+';renderPostDetail()">답글</span>' +
+      '<span class="post-comment-del" onclick="deletePostComment('+ci+')">✕</span>' +
       repliesHtml +
     '</div>';
   }).join('');
-  var replyingLabel = (isEditMode && phoneState.replyingTo !== null) ? '답글 입력 중 ('+((post.comments[phoneState.replyingTo]||{}).author||'?')+') <span onclick="phoneState.replyingTo=null;renderPostDetail()" style="cursor:pointer;color:#ef4444">✕</span>' : '';
-
-  // 헤더 버튼: 잠금 모드 = "수정" 버튼, 편집 모드 = "완료" 버튼
-  var headerRight = isEditMode
-    ? '<span onclick="phoneState.postEditMode=false;phoneState.replyingTo=null;renderPostDetail()" style="font-size:12px;font-weight:700;color:#6b4fd8;cursor:pointer;padding:4px 10px;background:#f0ecff;border-radius:12px;">완료</span>'
-    : '<span onclick="phoneState.postEditMode=true;renderPostDetail()" style="font-size:12px;color:#555;cursor:pointer;padding:4px 10px;background:#f5f5f5;border-radius:12px;border:1px solid #e0e0e0;">✏️ 수정</span>';
-
-  // 삭제 버튼은 편집 모드에만 표시
-  var deleteBtn = isEditMode ? '<span onclick="deletePost()" style="font-size:12px;color:#ef4444;cursor:pointer;padding:4px 8px;margin-right:4px">삭제</span>' : '';
-
+  var replyingLabel = phoneState.replyingTo !== null ? '답글 입력 중 ('+((post.comments[phoneState.replyingTo]||{}).author||'?')+') <span onclick="phoneState.replyingTo=null;renderPostDetail()" style="cursor:pointer;color:#ef4444">✕</span>' : '';
   scr.innerHTML = '<div class="post-detail">' +
-    '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen=\'album\';phoneState.postEditMode=false;renderPhone()">←</button><span class="msg-header-title">게시물</span>' +
-      deleteBtn + headerRight +
+    '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen=\'album\';renderPhone()">←</button><span class="msg-header-title">게시물</span>' +
+      '<span onclick="deletePost()" style="font-size:12px;color:#ef4444;cursor:pointer;padding:4px 8px">삭제</span>' +
     '</div>' +
+    // 인스타 스타일 아이디 헤더
     '<div style="display:flex;align-items:center;gap:9px;padding:10px 14px 8px;border-bottom:1px solid #f0f0f0;">' +
       '<div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+postAvatarHtml+'</div>' +
       '<div style="font-size:13px;font-weight:700;color:#1a1916;flex:1;">'+postUsername+'</div>' +
@@ -3529,23 +3553,23 @@ function renderPostDetail() {
     '<div class="post-body">' +
       '<div class="post-actions">' +
         '<button class="post-action-btn" onclick="togglePostLike()">'+(post.liked?'❤️':'🤍')+'</button>' +
-        '<span class="post-action-count"' + (isEditMode ? ' onclick="editPostLikes()" style="cursor:pointer;text-decoration:underline dotted #aaa;" title="숫자 클릭해서 수정"' : '') + '>'+(post.likes||0)+'</span>' +
+        '<span class="post-action-count" onclick="editPostLikes()" style="cursor:pointer;text-decoration:underline dotted #aaa;" title="숫자 클릭해서 수정">'+(post.likes||0)+'</span>' +
         '<button class="post-action-btn" onclick="togglePostRetweet()">'+(post.retweeted?'🔁':'🔄')+'</button>' +
-        '<span class="post-action-count"' + (isEditMode ? ' onclick="editPostRetweets()" style="cursor:pointer;text-decoration:underline dotted #aaa;" title="숫자 클릭해서 수정"' : '') + '>'+(post.retweets||0)+'</span>' +
+        '<span class="post-action-count" onclick="editPostRetweets()" style="cursor:pointer;text-decoration:underline dotted #aaa;" title="숫자 클릭해서 수정">'+(post.retweets||0)+'</span>' +
         '<button class="post-action-btn">💬</button>' +
         '<span class="post-action-count">'+(post.comments?post.comments.length:0)+'</span>' +
       '</div>' +
       '<div class="post-desc">' + (post.desc||'') + '</div>' +
       '<div class="post-comments">' + commentsHtml + '</div>' +
       (replyingLabel ? '<div style="font-size:11px;color:#888;margin-bottom:4px">'+replyingLabel+'</div>' : '') +
-      // 댓글 입력창 - 편집 모드에만 표시
-      (isEditMode ? '<div class="post-comment-input-area">' +
+      // 댓글 입력창 - 버튼 아래로
+      '<div class="post-comment-input-area">' +
         '<div style="display:flex;gap:8px;align-items:center;">' +
           '<input class="post-comment-input" id="postCommentAuthor" placeholder="이름" style="width:70px;flex-shrink:0;">' +
           '<input class="post-comment-input" id="postCommentText" placeholder="댓글 추가..." style="flex:1;">' +
         '</div>' +
         '<button class="post-comment-submit-full" onclick="addPostComment()">게시</button>' +
-      '</div>' : '') +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -3985,6 +4009,151 @@ function deleteMsg(i) {
     }
   });
 }
+/* ===== 📷 갤러리 앱 ===== */
+function renderGallery() {
+  var scr = document.getElementById('phoneScreen');
+  var pd = getPhoneData();
+  var photos = pd.gallery.photos || [];
+  var cellsHtml = '';
+  photos.forEach(function(p, i) {
+    cellsHtml += '<div class="gallery-grid-cell" onclick="phoneState.galleryIdx='+i+';phoneState.screen=\'galleryViewer\';renderPhone()">' +
+      '<img src="'+p.url+'" loading="lazy">' +
+    '</div>';
+  });
+  scr.innerHTML = '<div class="gallery-app">' +
+    '<div class="gallery-header">' +
+      '<button class="msg-back-btn" onclick="phoneState.screen=\'home\';renderPhone()">←</button>' +
+      '<span class="gallery-header-title">갤러리</span>' +
+    '</div>' +
+    '<div class="gallery-grid-wrap" style="position:relative">' +
+      '<div class="gallery-grid">' + (cellsHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#aaa;font-size:13px">📷<br>사진이 없어요<br>＋ 버튼으로 추가해보세요</div>') + '</div>' +
+      '<button class="gallery-add-btn" onclick="openGalleryAddSheet()">＋</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function openGalleryAddSheet() {
+  showPhoneModal({ title: '사진 추가', desc: '갤러리에 사진을 추가합니다',
+    confirmText: '파일 선택',
+    onConfirm: function() {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+      inp.onchange = function(e) {
+        var files = Array.from(e.target.files);
+        if (!files.length) return;
+        var remaining = files.length;
+        files.forEach(function(f) {
+          uploadFileToCloudinary(f, function(url) {
+            var pd = getPhoneData();
+            pd.gallery.photos.push({ url: url, caption: '', locked: false });
+            remaining--;
+            if (remaining === 0) { saveToFirebase(); renderGallery(); }
+          });
+        });
+      };
+      inp.click();
+    }
+  });
+}
+
+function renderGalleryViewer() {
+  var scr = document.getElementById('phoneScreen');
+  var pd = getPhoneData();
+  var photos = pd.gallery.photos || [];
+  var idx = phoneState.galleryIdx || 0;
+  var photo = photos[idx];
+  if (!photo) { phoneState.screen = 'gallery'; renderPhone(); return; }
+  var navHtml = '';
+  if (photos.length > 1) {
+    navHtml = '<div style="display:flex;justify-content:center;gap:4px;margin-bottom:8px">' +
+      photos.map(function(_,i){ return '<div style="width:6px;height:6px;border-radius:50%;background:'+(i===idx?'#6b4fd8':'#ccc')+';cursor:pointer" onclick="phoneState.galleryIdx='+i+';renderGalleryViewer()"></div>'; }).join('') +
+    '</div>';
+  }
+  var prevBtn = idx > 0 ? '<button class="post-slide-arrow left" onclick="phoneState.galleryIdx='+(idx-1)+';renderGalleryViewer()">‹</button>' : '';
+  var nextBtn = idx < photos.length-1 ? '<button class="post-slide-arrow right" onclick="phoneState.galleryIdx='+(idx+1)+';renderGalleryViewer()">›</button>' : '';
+  scr.innerHTML = '<div class="gallery-viewer">' +
+    '<div class="msg-header" style="background:#000;border-bottom:1px solid #222;">' +
+      '<button class="msg-back-btn" style="color:#fff" onclick="phoneState.screen=\'gallery\';renderPhone()">←</button>' +
+      '<span style="font-size:14px;font-weight:600;color:#fff;flex:1">'+( idx+1)+' / '+(photos.length)+'</span>' +
+    '</div>' +
+    '<div class="gallery-viewer-img-wrap" style="position:relative">' +
+      '<img src="'+photo.url+'">' +
+      prevBtn + nextBtn +
+    '</div>' +
+    '<div class="gallery-viewer-footer">' +
+      navHtml +
+      '<div class="gallery-viewer-caption">'+(photo.caption || '<span style="color:#aaa">캡션 없음</span>')+'</div>' +
+      '<div class="gallery-viewer-actions">' +
+        (photo.locked
+          ? '<button class="gallery-viewer-btn edit" onclick="unlockGalleryPhoto('+idx+')">✏️ 수정</button>'
+          : '<button class="gallery-viewer-btn edit" onclick="phoneState.galleryEditIdx='+idx+';phoneState.screen=\'galleryEdit\';renderPhone()">✏️ 수정</button>' +
+            '<button class="gallery-viewer-btn del" onclick="deleteGalleryPhoto('+idx+')">🗑 삭제</button>'
+        ) +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderGalleryEdit() {
+  var scr = document.getElementById('phoneScreen');
+  var pd = getPhoneData();
+  var idx = phoneState.galleryEditIdx;
+  var photo = (pd.gallery.photos || [])[idx];
+  if (!photo) { phoneState.screen = 'gallery'; renderPhone(); return; }
+  var captionSafe = (photo.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  scr.innerHTML = '<div class="gallery-app">' +
+    '<div class="msg-header"><button class="msg-back-btn" onclick="phoneState.screen=\'galleryViewer\';renderPhone()">←</button><span class="gallery-header-title">사진 수정</span></div>' +
+    '<div class="gallery-edit-form chat-settings-wrap">' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">미리보기</div>' +
+        '<img src="'+photo.url+'" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;">' +
+      '</div>' +
+      '<div class="chat-settings-section">' +
+        '<div class="chat-settings-section-title">캡션</div>' +
+        '<textarea id="galleryCaptionInput" rows="3" placeholder="이 사진에 대한 설명을 입력하세요...">'+captionSafe+'</textarea>' +
+      '</div>' +
+      '<button class="settings-save-btn" onclick="saveGalleryPhotoEdit('+idx+')">저장 및 잠금</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function saveGalleryPhotoEdit(idx) {
+  var pd = getPhoneData();
+  var caption = document.getElementById('galleryCaptionInput').value;
+  pd.gallery.photos[idx].caption = caption;
+  pd.gallery.photos[idx].locked = true;
+  saveToFirebase();
+  phoneState.galleryIdx = idx;
+  phoneState.screen = 'galleryViewer';
+  renderPhone();
+}
+
+function unlockGalleryPhoto(idx) {
+  showPhoneModal({ title: '수정 잠금 해제', desc: '이 사진의 잠금을 해제하고 수정할까요?', confirmText: '수정하기',
+    onConfirm: function() {
+      var pd = getPhoneData();
+      pd.gallery.photos[idx].locked = false;
+      saveToFirebase();
+      phoneState.galleryEditIdx = idx;
+      phoneState.screen = 'galleryEdit';
+      renderPhone();
+    }
+  });
+}
+
+function deleteGalleryPhoto(idx) {
+  showPhoneModal({ title: '사진 삭제', desc: '이 사진을 삭제할까요?', confirmText: '삭제', confirmClass: 'danger',
+    onConfirm: function() {
+      var pd = getPhoneData();
+      pd.gallery.photos.splice(idx, 1);
+      saveToFirebase();
+      phoneState.screen = 'gallery';
+      renderPhone();
+    }
+  });
+}
+/* ===== /갤러리 앱 ===== */
+
 function saveChatSettings() {
   var pd = getPhoneData();
   var room = pd.rooms[phoneState.currentRoom];
